@@ -1,94 +1,107 @@
 #include <SoftwareSerial.h>
 
-int gsm_receiver = 0;
-int gsm_transmitter = 1;
-SoftwareSerial Sim(gsm_receiver, gsm_transmitter); // Define RX and TX pins for SoftwareSerial
+// Define pins
+#define GSM_RX 0
+#define GSM_TX 1
+#define BUZZER 2
+#define VIBRATION_SENSOR 3
+#define SPEAKER 4
+#define LED_DANGER 5
+#define LED_SAFE 7
+#define CAMERA_BTN 6
 
-int buzzer = 2;
-int vibration_sensor = 3;
-int speaker = 4;
-int led_danger = 5;
-int led_safe = 7;
-int camera_btn = 6;
-int delay_time = 1;//Thats a delay of 1ms
-int message_status = 0;
-void setup(){
-  message_status = 0; // Initialize message status
-  Sim.begin(9600); // GSM module baud rate
-  Serial.begin(9600); // Debugging baud rate
-  Sim.println("AT+CMGF=1"); // Set to SMS mode
-  delay(delay_time); //Change the delay in live mode
-  Sim.println("AT+CNMI=2,2,0,0,0"); // Live SMS notifications
-  delay(delay_time); //Change the delay in live mode;
+// Constants
+const int delay_time = 50; // Delay in milliseconds
+const int check_interval = 100; // Sensor check interval in milliseconds
 
-  pinMode(buzzer, OUTPUT);
-  pinMode(vibration_sensor, INPUT);
-  pinMode(speaker, OUTPUT);
-  pinMode(led_danger, OUTPUT);
-  pinMode(led_safe, OUTPUT);
-  pinMode(camera_btn, INPUT);
-  SendMessage("+1234567890", "System Initialized"); // Send message when system is initialized
+// Global variables
+int message_status = 0; // Tracks whether a message has already been sent
+unsigned long last_check_time = 0; // Keeps track of the last sensor check
+
+SoftwareSerial Sim(GSM_RX, GSM_TX); // SoftwareSerial for GSM communication
+
+void setup() {
+  // Initialize GSM communication
+  Sim.begin(9600);
+  
+  // Send GSM setup commands
+  sendGSMCommand("AT+CMGF=1"); // Set SMS text mode
+  sendGSMCommand("AT+CNMI=2,2,0,0,0"); // Enable live SMS notifications
+  
+  // Configure pins
+  pinMode(BUZZER, OUTPUT);
+  pinMode(VIBRATION_SENSOR, INPUT);
+  pinMode(SPEAKER, OUTPUT);
+  pinMode(LED_DANGER, OUTPUT);
+  pinMode(LED_SAFE, OUTPUT);
+  pinMode(CAMERA_BTN, INPUT);
+  
+  // Send system initialization message
+  SendMessage("+1234567890", "System Initialized");
 }
 
-void loop(){
-  String phoneNumber = "+1234567890";
-  if(digitalRead(vibration_sensor) == 1){
-  if(digitalRead(camera_btn) == 1){
-    if(!message_status){
-    digitalWrite(buzzer, 1);
-    digitalWrite(led_danger, 1);
-    digitalWrite(led_safe, 0);
-    digitalWrite(speaker, 1);
-    SendMessage(phoneNumber, "Elephant Detected!"); // Send message when elephant is detected
-    ReceiveMessage(); //Check for incoming messages
-    message_status = 1;
-    }
+void loop() {
+  // Check sensors at regular intervals
+  if (millis() - last_check_time >= check_interval) {
+    last_check_time = millis();
+    checkSensors(); // Monitor sensors and handle alerts
+  }
+  
+  ReceiveMessage(); // Continuously check for incoming messages
+}
 
-    delay(delay_time); // Wait before the next iteration
+// Function to monitor sensors and trigger actions
+void checkSensors() {
+  bool vibration_detected = digitalRead(VIBRATION_SENSOR) == HIGH;
+  bool camera_triggered = digitalRead(CAMERA_BTN) == HIGH;
 
-  }
-  else{
-    digitalWrite(buzzer, 0);
-    digitalWrite(led_safe, 1);
-    digitalWrite(speaker, 0);
-    digitalWrite(led_danger, 0);
-    message_status = 0; // Reset message status when no elephant is detected
-  }
-  }
-  else{
-    digitalWrite(buzzer, 0);
-    digitalWrite(led_safe, 1);
-    digitalWrite(speaker, 0);
-    digitalWrite(led_danger, 0);
+  if (vibration_detected && camera_triggered && message_status == 0) {
+    activateAlert();
+    SendMessage("+1234567890", "Elephant Detected!");
+    message_status = 1; // Prevent repeated messages
+  } else if (!vibration_detected || !camera_triggered) {
+    deactivateAlert();
+    message_status = 0; // Reset message status when no detection
   }
 }
 
+// Function to activate alert systems
+void activateAlert() {
+  digitalWrite(BUZZER, HIGH);
+  digitalWrite(LED_DANGER, HIGH);
+  digitalWrite(LED_SAFE, LOW);
+  digitalWrite(SPEAKER, HIGH);
+}
 
+// Function to deactivate alert systems
+void deactivateAlert() {
+  digitalWrite(BUZZER, LOW);
+  digitalWrite(LED_DANGER, LOW);
+  digitalWrite(LED_SAFE, HIGH);
+  digitalWrite(SPEAKER, LOW);
+}
+
+// Function to send a message
 void SendMessage(String phoneNumber, String message) {
-  Sim.println("AT+CMGF=1"); // Set GSM module to SMS mode
+  sendGSMCommand("AT+CMGS=\"" + phoneNumber + "\"");
   delay(delay_time);
-
-  Sim.print("AT+CMGS=\"");
-  Sim.print(phoneNumber); // Add recipient's phone number
-  Sim.println("\"");
+  Sim.println(message); // Send the message text
   delay(delay_time);
-
-  Sim.println(message); // Add message content
-  delay(delay_time);
-
-  Sim.write(26); // Send Ctrl+Z to end the message
-  delay(3*delay_time);
-
-  Serial.println("Message Sent: " + message); // Print to serial monitor for debugging
+  Sim.write(26); // CTRL+Z to end the SMS
+  delay(delay_time * 2);
 }
 
-// Function to receive messages
+// Function to receive messages from the GSM module
 void ReceiveMessage() {
-  if (Sim.available() > 0) { // Check if data is available from the GSM module
+  if (Sim.available() > 0) {
     while (Sim.available()) {
-      char c = Sim.read(); // Read each character from the serial buffer
-      Serial.print(c);     // Print the incoming message to the serial monitor
+      char c = Sim.read();
     }
-    Serial.println(); // Add a newline after the  message
   }
+}
+
+// Helper function to send generic GSM commands
+void sendGSMCommand(String command) {
+  Sim.println(command);
+  delay(delay_time); // Allow time for GSM processing
 }

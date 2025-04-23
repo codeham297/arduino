@@ -89,6 +89,6 @@ void ReceiveMessage() {
       char c = Sim.read(); // Read each character from the serial buffer
       Serial.print(c);     // Print the incoming message to the serial monitor
     }
-    Serial.println(); // Add a newline after the message
+    Serial.println(); // Add a newline after the  message
   }
 }

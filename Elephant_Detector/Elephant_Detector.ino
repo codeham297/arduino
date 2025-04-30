@@ -74,6 +74,7 @@ void checkSensors() {
     elephant_message_sent = true; // Prevent repeated messages for elephant detection
   } else if (!camera_triggered) {
     elephant_message_sent = false; // Reset elephant message status
+    deactivateAlert(); // Deactivate alert if camera is not triggered
   }
 
   // Deactivate alert if no detections are active

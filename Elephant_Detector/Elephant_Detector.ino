@@ -15,10 +15,16 @@ const int delay_time = 50; // Delay in milliseconds
 const int check_interval = 100; // Sensor check interval in milliseconds
 
 // Global variables
-int message_status = 0; // Tracks whether a message has already been sent
+bool vibration_message_sent = false; // Tracks if vibration message has been sent
+bool elephant_message_sent = false; // Tracks if elephant message has been sent
 unsigned long last_check_time = 0; // Keeps track of the last sensor check
 
 SoftwareSerial Sim(GSM_RX, GSM_TX); // SoftwareSerial for GSM communication
+
+String phoneNumber = "+1234567890"; // Replace with the actual phone number
+String vibration_message = "Vibration Detected!";
+String elephant_message = "Elephant Detected!";
+String system_status = "System Initialized"; // Initial system status message
 
 void setup() {
   // Initialize GSM communication
@@ -37,7 +43,7 @@ void setup() {
   pinMode(CAMERA_BTN, INPUT);
   
   // Send system initialization message
-  SendMessage("+1234567890", "System Initialized");
+  SendMessage(phoneNumber, system_status);
 }
 
 void loop() {
@@ -55,13 +61,24 @@ void checkSensors() {
   bool vibration_detected = digitalRead(VIBRATION_SENSOR) == HIGH;
   bool camera_triggered = digitalRead(CAMERA_BTN) == HIGH;
 
-  if (vibration_detected && camera_triggered && message_status == 0) {
+  if (vibration_detected && !vibration_message_sent) {
+    SendMessage(phoneNumber, vibration_message);
+    vibration_message_sent = true; // Prevent repeated messages for vibration
+  } else if (!vibration_detected) {
+    vibration_message_sent = false; // Reset vibration message status
+  }
+
+  if (vibration_detected && camera_triggered && !elephant_message_sent) {
     activateAlert();
-    SendMessage("+1234567890", "Elephant Detected!");
-    message_status = 1; // Prevent repeated messages
-  } else if (!vibration_detected || !camera_triggered) {
+    SendMessage(phoneNumber, elephant_message);
+    elephant_message_sent = true; // Prevent repeated messages for elephant detection
+  } else if (!camera_triggered) {
+    elephant_message_sent = false; // Reset elephant message status
+  }
+
+  // Deactivate alert if no detections are active
+  if (!vibration_detected && !camera_triggered) {
     deactivateAlert();
-    message_status = 0; // Reset message status when no detection
   }
 }
 
@@ -96,6 +113,7 @@ void ReceiveMessage() {
   if (Sim.available() > 0) {
     while (Sim.available()) {
       char c = Sim.read();
+      // Optional: Process the received character if needed
     }
   }
 }

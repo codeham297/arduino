@@ -1,5 +1,4 @@
 *.eep
 *.elf
-*.hex
 *.bin
 *.workspace

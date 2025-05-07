@@ -1,0 +1,107 @@
+#include "stm32g0xx_hal.h"
+#include "string.h"
+
+// Pin Definitions
+#define RFID_SS_PIN GPIO_PIN_4
+#define RFID_RST_PIN GPIO_PIN_3
+#define FLOW_SENSOR_PIN GPIO_PIN_0
+#define SOLENOID_PIN GPIO_PIN_8
+#define LED_ACCEPT GPIO_PIN_7
+#define LED_REJECT GPIO_PIN_6
+#define LED_POWER GPIO_PIN_9
+
+// UART & SPI Handles
+UART_HandleTypeDef huart1;
+SPI_HandleTypeDef hspi1;
+
+// RFID Buffer
+uint8_t rfidData[10];
+
+// Flow Sensor Variables
+volatile uint32_t flowPulseCount = 0;
+float totalWaterUsage = 0;
+
+// Interrupt Handler for Flow Sensor
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+    if (GPIO_Pin == FLOW_SENSOR_PIN) {
+        flowPulseCount++;
+    }
+}
+
+// RFID Read Function
+void ReadRFID() {
+    uint8_t cmd = 0x3A; // Example SPI command for RFID module
+    HAL_GPIO_WritePin(GPIOB, RFID_SS_PIN, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(&hspi1, &cmd, rfidData, sizeof(rfidData), HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(GPIOB, RFID_SS_PIN, GPIO_PIN_SET);
+    
+    if (strcmp((char*)rfidData, "A1B2C3D4") == 0) { // Replace with valid card ID
+        GrantAccess();
+    } else {
+        DenyAccess();
+    }
+}
+
+// GSM Send SMS Function
+void SendSMS(char *message) {
+    char smsCommand[50];
+    
+    HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CMGF=1\r\n", strlen("AT+CMGF=1\r\n"), HAL_MAX_DELAY);
+    HAL_Delay(1000);
+    
+    sprintf(smsCommand, "AT+CMGS=\"+1234567890\"\r\n"); // Replace with recipient number
+    HAL_UART_Transmit(&huart1, (uint8_t*)smsCommand, strlen(smsCommand), HAL_MAX_DELAY);
+    HAL_Delay(1000);
+    
+    HAL_UART_Transmit(&huart1, (uint8_t*)message, strlen(message), HAL_MAX_DELAY);
+    HAL_Delay(1000);
+    HAL_UART_Transmit(&huart1, (uint8_t*)"\x1A", 1, HAL_MAX_DELAY); // End SMS
+}
+
+// Grant Access Function
+void GrantAccess() {
+    HAL_GPIO_WritePin(GPIOB, LED_ACCEPT, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOB, SOLENOID_PIN, GPIO_PIN_SET);
+    SendSMS("Access Granted!");
+
+    HAL_Delay(3000);
+    HAL_GPIO_WritePin(GPIOB, LED_ACCEPT, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOB, SOLENOID_PIN, GPIO_PIN_RESET);
+}
+
+// Deny Access Function
+void DenyAccess() {
+    HAL_GPIO_WritePin(GPIOB, LED_REJECT, GPIO_PIN_SET);
+    SendSMS("Access Denied!");
+
+    HAL_Delay(3000);
+    HAL_GPIO_WritePin(GPIOB, LED_REJECT, GPIO_PIN_RESET);
+}
+
+// Flow Sensor Calculation
+void CalculateFlowRate() {
+    static uint32_t lastMeasurementTime = HAL_GetTick();
+    if ((HAL_GetTick() - lastMeasurementTime) >= 1000) {
+        float flowRate = flowPulseCount * 0.002; // Example conversion factor
+        totalWaterUsage += flowRate;
+
+        flowPulseCount = 0;
+        lastMeasurementTime = HAL_GetTick();
+    }
+}
+
+// Setup Initialization
+void SystemInit() {
+    HAL_GPIO_WritePin(GPIOB, LED_POWER, GPIO_PIN_SET); // Power LED ON
+}
+
+// Main Loop
+int main(void) {
+    HAL_Init();
+    SystemInit();
+
+    while (1) {
+        ReadRFID();
+        CalculateFlowRate();
+    }
+}

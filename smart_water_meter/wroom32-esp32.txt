@@ -1,0 +1,140 @@
+#include <SPI.h>
+#include <MFRC522.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_ST7789.h>
+#include <SoftwareSerial.h>
+
+// Define Pins
+#define SS_PIN  5
+#define RST_PIN 0
+#define FLOW_SENSOR_PIN 14
+#define SOLENOID_PIN 27
+#define LED_ACCEPT 12
+#define LED_REJECT 14
+#define LED_POWER 13
+#define SIM_TX 16
+#define SIM_RX 17
+#define TFT_CS 2
+#define TFT_RST 4
+#define TFT_DC 18
+
+// Initialize Components
+MFRC522 rfid(SS_PIN, RST_PIN);
+SoftwareSerial gsm(SIM_TX, SIM_RX); // GSM Communication
+Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
+
+volatile int flowPulseCount = 0;
+unsigned long lastFlowMeasurement = millis();
+float totalWaterUsage = 0;
+
+void IRAM_ATTR countFlowPulse() {
+    flowPulseCount++;
+}
+
+void setup() {
+    Serial.begin(115200);
+    SPI.begin();
+    rfid.PCD_Init();
+    gsm.begin(9600);
+
+    pinMode(FLOW_SENSOR_PIN, INPUT);
+    attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), countFlowPulse, RISING);
+    
+    pinMode(SOLENOID_PIN, OUTPUT);
+    pinMode(LED_ACCEPT, OUTPUT);
+    pinMode(LED_REJECT, OUTPUT);
+    pinMode(LED_POWER, OUTPUT);
+    
+    digitalWrite(LED_POWER, HIGH); // Power LED ON
+
+    // TFT Display Initialization
+    tft.init(240, 240);
+    tft.fillScreen(ST77XX_BLACK);
+    tft.setTextColor(ST77XX_WHITE);
+    tft.setTextSize(2);
+    tft.setCursor(10, 10);
+    tft.println("System Ready...");
+}
+
+void loop() {
+    checkRFID();
+    calculateFlowRate();
+}
+
+void checkRFID() {
+    if (!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial()) {
+        return;
+    }
+
+    String cardID = "";
+    for (byte i = 0; i < rfid.uid.size; i++) {
+        cardID += String(rfid.uid.uidByte[i], HEX);
+    }
+
+    Serial.println("Card Scanned: " + cardID);
+    
+    if (cardID == "A1B2C3D4") { // Replace with registered card UID
+        grantAccess();
+    } else {
+        denyAccess();
+    }
+}
+
+void grantAccess() {
+    digitalWrite(LED_ACCEPT, HIGH);
+    digitalWrite(SOLENOID_PIN, HIGH);
+    sendSMS("Access Granted!");
+
+    tft.fillScreen(ST77XX_GREEN);
+    tft.setCursor(10, 50);
+    tft.println("Access Granted!");
+    
+    delay(3000);
+    digitalWrite(LED_ACCEPT, LOW);
+    digitalWrite(SOLENOID_PIN, LOW);
+}
+
+void denyAccess() {
+    digitalWrite(LED_REJECT, HIGH);
+    sendSMS("Access Denied!");
+
+    tft.fillScreen(ST77XX_RED);
+    tft.setCursor(10, 50);
+    tft.println("Access Denied!");
+    
+    delay(3000);
+    digitalWrite(LED_REJECT, LOW);
+}
+
+void calculateFlowRate() {
+    if (millis() - lastFlowMeasurement >= 1000) {
+        float flowRate = flowPulseCount * 0.002; // Example conversion factor
+        totalWaterUsage += flowRate;
+        
+        Serial.print("Flow Rate: ");
+        Serial.print(flowRate);
+        Serial.print(" L/min | Total: ");
+        Serial.println(totalWaterUsage);
+
+        tft.fillScreen(ST77XX_BLACK);
+        tft.setTextColor(ST77XX_WHITE);
+        tft.setCursor(10, 100);
+        tft.println("Flow Rate: " + String(flowRate) + " L/min");
+        tft.setCursor(10, 130);
+        tft.println("Total: " + String(totalWaterUsage) + " L");
+
+        flowPulseCount = 0;
+        lastFlowMeasurement = millis();
+    }
+}
+
+void sendSMS(String message) {
+    gsm.println("AT+CMGF=1");
+    delay(1000);
+    gsm.println("AT+CMGS=\"+1234567890\""); // Replace with recipient phone number
+    delay(1000);
+    gsm.print(message);
+    delay(1000);
+    gsm.write(26); // End SMS
+}

@@ -1,9 +1,9 @@
-
 /* Fill in information from Blynk Device Info here */
 #define BLYNK_TEMPLATE_ID "TMPL2fA5FeDds"
 #define BLYNK_TEMPLATE_NAME "METER"
 #define BLYNK_AUTH_TOKEN "-TSP4WITnmcJv5D1xOlsfmGiNeFmN9wX"
 
+#include <Arduino.h>
 #include <SPI.h>
 #include <MFRC522.h>
 #include <WiFi.h>
@@ -23,16 +23,18 @@ char pass[] = "04012024ABDUL";
 #define SS_PIN 5    // RFID SDA (SS) → ESP32 D5
 #define RST_PIN 4   // RFID Reset → ESP32 D4
 
-// These pins are used for flow sensor
+// Define GPIO pins for various components
 #define FLOW_SENSOR_PIN 14 // Flow sensor data pin (GPIO 14)
-// These pins are used for solenoid valve control
-#define SOLENOID_VALVE 16 // Solenoid valve control pin (GPIO 16)
-// These pins are used for indicator LEDs
-#define RED_LED 33    // RFID authentification failure LED pin (GPIO 33)
-#define GREEN_LED 26  // RFID authentification success LED pin (GPIO 26)
-#define BLUE_LED 32   // System is running and connected to the internet LED pin (GPIO 32)
-#define YELLOW_LED 25 // Water flow indicator LED pin (GPIO 25)
-#define WHITE_LED 27  // Blinks rapidly when water is leaking (GPIO 27)
+#define SOLENOID_VALVE 16  // Solenoid valve control pin (GPIO 16)
+#define RED_LED 33         // RFID authentification failure LED pin (GPIO 33)
+#define GREEN_LED 26       // RFID authentification success LED pin (GPIO 26)
+#define BLUE_LED 32        // System is running and connected to the internet LED pin (GPIO 32)
+#define YELLOW_LED 25      // Water flow indicator LED pin (GPIO 25)
+#define WHITE_LED 27       // Blinks rapidly when water is leaking (GPIO 27)
+
+// Define functions
+void checkConnection(); // Function to check Blynk connection status
+void ledPowerTest();    // Function to test LED functionality
 
 // Create MFRC522 instance
 MFRC522 mfrc522(SS_PIN, RST_PIN);

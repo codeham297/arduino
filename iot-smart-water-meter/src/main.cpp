@@ -6,7 +6,6 @@
 char ssid[] = "ABDULHAMEED";
 char pass[] = "04012024ABDUL";
 
-#include <Arduino.h>
 #include <SPI.h>
 #include <MFRC522.h>
 #include <WiFi.h>

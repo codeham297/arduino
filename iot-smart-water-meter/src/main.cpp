@@ -23,11 +23,12 @@ char pass[] = "04012024ABDUL";
 #define RST_PIN 4
 #define FLOW_SENSOR_PIN 14
 #define SOLENOID_VALVE 16
-#define RED_LED 33    // Card not recognized
-#define GREEN_LED 26  // Card recognized
-#define BLUE_LED 32   // Blynk connected
-#define YELLOW_LED 25 // Solenoid valve open
-#define WHITE_LED 27  // Leaking water detected
+#define RED_LED 33           // Card not recognized
+#define GREEN_LED 26         // Card recognized
+#define BLUE_LED 32          // Blynk connected
+#define YELLOW_LED 25        // Solenoid valve open
+#define WHITE_LED 27         // Leaking water detected
+#define PULSES_PER_LITER 450 // Adjust based on sensor specs
 
 // Declare task handles
 TaskHandle_t waterFlowTaskHandle = NULL;
@@ -101,7 +102,6 @@ void setup()
   mfrc522.PCD_DumpVersionToSerial();
   Serial.println("RFID Scanner Ready...");
 
-  // xTaskCreate(waterFlow, "WaterFlowTask", 2048, NULL, 2, &waterFlowTaskHandle);
   xTaskCreate(rfidScanner, "RFIDScannerTask", 2048, NULL, 2, &rfidScannerTaskHandle);
   // xTaskCreate(checkConnection, "CheckConnectionTask", 2048, NULL, 1, &checkConnectionTaskHandle);
   // xTaskCreate(blynkTask, "BlynkTask", 2048, NULL, 3, NULL);
@@ -231,30 +231,34 @@ void rfidScanner(void *pvParameters)
   }
 }
 
-void waterFlow(void *pvParameters)
+void waterFlow()
 {
   static unsigned long lastFlowTime = 0;
   static unsigned long flowCount = 0;
+  static float totalWaterUsed = 0.0;
 
-  while (true)
+  int flowState = digitalRead(FLOW_SENSOR_PIN);
+
+  if (flowState == HIGH)
   {
-    int flowState = digitalRead(FLOW_SENSOR_PIN);
+    digitalWrite(YELLOW_LED, HIGH);
 
-    if (flowState == HIGH)
-    {
-      digitalWrite(YELLOW_LED, HIGH);
-      if (millis() - lastFlowTime > 1000)
-      {
-        flowCount++;
-        Serial.print("Water Flow Count: ");
-        Serial.println(flowCount);
-        lastFlowTime = millis();
-      }
+    if (millis() - lastFlowTime > 1000)
+    { // Every second update
+      flowCount++;
+      totalWaterUsed = flowCount / (float)PULSES_PER_LITER; // Convert pulses to liters
+
+      Serial.print("Water Flow Count: ");
+      Serial.println(flowCount);
+      Serial.print("Total Water Used: ");
+      Serial.print(totalWaterUsed);
+      Serial.println(" L");
+
+      lastFlowTime = millis();
     }
-    else
-    {
-      digitalWrite(YELLOW_LED, LOW);
-    }
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+  }
+  else
+  {
+    digitalWrite(YELLOW_LED, LOW);
   }
 }

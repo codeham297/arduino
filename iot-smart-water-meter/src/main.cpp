@@ -3,8 +3,8 @@
 #define BLYNK_TEMPLATE_NAME "METER"
 #define BLYNK_AUTH_TOKEN "-TSP4WITnmcJv5D1xOlsfmGiNeFmN9wX"
 
-char ssid[] = "ABDULHAMEED";
-char pass[] = "04012024ABDUL";
+char ssid[] = "ESP32_AP";
+char pass[] = "00000000";
 
 #include <SPI.h>
 #include <MFRC522.h>
@@ -52,16 +52,16 @@ struct UserData
 
 // Sample user database
 UserData users[10] = {
-    {"Alice", "33AD9C14", 50.0, 0.4},
-    {"Bob", "4C870802", 75.0, 0.3},
-    {"Charlie", "DB05219F", 100.0, 0.0},
-    {"David", "5B06F79E", 120.0, 0.3},
-    {"Eve", "DE6BD09F", 80.0, 0.0},
-    {"Frank", "9B5FFE9E", 60.0, 10.0},
-    {"Grace", "7BDD219F", 90.0, 0.0},
-    {"Heidi", "CBCF199F", 110.0, 0.0},
-    {"Ivan", "CB9C099F", 130.0, 0.0},
-    {"Judy", "0BDE229F", 140.0, 0.0}};
+    {"Alice", "33AD9C14", 8.0, 72.5},
+    {"Bob", "4C870802", 15.0, 94.3},
+    {"Charlie", "DB05219F", 3.0, 29.1},
+    {"David", "5B06F79E", 19.0, 67.2},
+    {"Eve", "DE6BD09F", 12.0, 88.6},
+    {"Frank", "9B5FFE9E", 7.0, 41.7},
+    {"Grace", "7BDD219F", 4.0, 99.8},
+    {"Heidi", "CBCF199F", 18.0, 55.4},
+    {"Ivan", "CB9C099F", 2.0, 23.9},
+    {"Judy", "0BDE229F", 10.0, 76.1}};
 
 // Create MFRC522 instance for RFID scanning
 MFRC522 mfrc522(SS_PIN, RST_PIN);

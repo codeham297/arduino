@@ -55,7 +55,7 @@ UserData users[10] = {
     {"Charlie", "DB05219F", 100.0, 0.0},
     {"David", "5B06F79E", 120.0, 0.3},
     {"Eve", "DE6BD09F", 80.0, 0.0},
-    {"Frank", "9B5FFE9E", 60.0, 5.0},
+    {"Frank", "9B5FFE9E", 60.0, 10.0},
     {"Grace", "7BDD219F", 90.0, 0.0},
     {"Heidi", "CBCF199F", 110.0, 0.0},
     {"Ivan", "CB9C099F", 130.0, 0.0},
@@ -134,13 +134,27 @@ void rfidScanner(void *pvParameters)
       {
         cardAbsenceCounter++; // Increment counter only when card was previously detected
 
-        if (cardAbsenceCounter >= 5) // Wait for multiple failed checks before confirming removal
+        if (cardAbsenceCounter >= 5)
         {
-          Serial.println("Card removed. Resetting current_user_uid...");
-          Serial.println("Total water Used by user: " + current_user_uid + " is " + String(totalWaterUsed) + "L");
+          float sessionUsage = totalWaterUsed; // 🔹 Capture usage before reset
+          Serial.println("Card removed. Water used during session: " + String(sessionUsage) + " L");
+
+          // Update user data (optional)
+          for (int i = 0; i < 10; i++)
+          {
+            if (users[i].cardUID == current_user_uid)
+            {
+              users[i].waterUsage += sessionUsage;
+              users[i].balance -= sessionUsage; // Example liter used
+              break;
+            }
+          }
+
           current_user_uid = "00000000";
-          digitalWrite(SOLENOID_VALVE, HIGH); // Close the solenoid valve
-          digitalWrite(YELLOW_LED, LOW);      // Turn off the yellow LED
+          pulseCount = 0; // 🔹 Reset after logging usage
+          totalWaterUsed = 0.0;
+          digitalWrite(SOLENOID_VALVE, HIGH);
+          digitalWrite(YELLOW_LED, LOW);
           cardPresent = false;
           cardAbsenceCounter = 0;
         }
@@ -177,7 +191,7 @@ void rfidScanner(void *pvParameters)
         {
           digitalWrite(SOLENOID_VALVE, LOW); // Open the solenoid valve for the user
           digitalWrite(YELLOW_LED, HIGH);    // Turn on the yellow LED to indicate water flow
-          Serial.println("Solenoid valve opened for user: " + user.userName + String(user.balance) + "L");
+          Serial.println("Solenoid valve opened for: " + user.userName + " balance: " + String(user.balance) + "L");
           waterFlow();
         }
         else
@@ -217,6 +231,39 @@ void waterFlow()
   digitalWrite(YELLOW_LED, pulseCount > 0 ? HIGH : LOW); // LED on if flow is detected
 }
 
+void waterFlowTask(void *pvParameters)
+{
+  while (true)
+  {
+    if (current_user_uid != "00000000")
+    { // Only track if a user is present
+      totalWaterUsed = pulseCount / (float)PULSES_PER_LITER;
+      Serial.println("Current Water Usage: " + String(totalWaterUsed) + " L");
+
+      // Find current user and check balance
+      for (int i = 0; i < 10; i++)
+      {
+        if (users[i].cardUID == current_user_uid)
+        {
+          users[i].balance -= totalWaterUsed; // Deduct used amount
+
+          if (users[i].balance <= 0)
+          { // Balance ran out
+            Serial.println("Balance depleted! Closing solenoid valve...");
+            digitalWrite(SOLENOID_VALVE, HIGH); // Close valve
+            digitalWrite(YELLOW_LED, LOW);      // Turn off indicator
+            current_user_uid = "00000000";      // Reset session
+            pulseCount = 0;                     // Reset pulse count
+            totalWaterUsed = 0.0;
+            break; // Exit loop
+          }
+        }
+      }
+    }
+    vTaskDelay(500 / portTICK_PERIOD_MS); // Update every 500ms
+  }
+}
+
 void IRAM_ATTR countPulse()
 {
   pulseCount++; // Interrupt increases count with each pulse
@@ -243,6 +290,7 @@ void setup()
   Serial.println("RFID Scanner Ready...");
 
   xTaskCreate(rfidScanner, "RFIDScannerTask", 2048, NULL, 2, &rfidScannerTaskHandle);
+  xTaskCreate(waterFlowTask, "WaterFlowMonitor", 2048, NULL, 2, &waterFlowTaskHandle);
   // xTaskCreate(checkConnection, "CheckConnectionTask", 2048, NULL, 1, &checkConnectionTaskHandle);
   // xTaskCreate(blynkTask, "BlynkTask", 2048, NULL, 3, NULL);
 }

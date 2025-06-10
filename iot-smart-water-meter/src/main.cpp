@@ -26,11 +26,13 @@ char pass[] = "04012024ABDUL";
 #define RED_LED 33           // Card not recognized
 #define GREEN_LED 26         // Card recognized
 #define BLUE_LED 32          // Blynk connected
-#define YELLOW_LED 25        // Solenoid valve open
+#define YELLOW_LED 25        // Indicator for solenoid open / water flow
 #define WHITE_LED 27         // Leaking water detected
 #define PULSES_PER_LITER 450 // Adjust based on sensor specs
+
 volatile unsigned long pulseCount = 0;
 static float totalWaterUsed = 0.0;
+static unsigned long lastPulseCount = 0; // NEW: For delta pulse tracking
 
 // Declare task handles
 TaskHandle_t waterFlowTaskHandle = NULL;
@@ -61,17 +63,15 @@ UserData users[10] = {
     {"Ivan", "CB9C099F", 130.0, 0.0},
     {"Judy", "0BDE229F", 140.0, 0.0}};
 
-// Create MFRC522 instance
+// Create MFRC522 instance for RFID scanning
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
-// Function declarations (unchanged)
+// Function declarations
 void checkConnection(void *pvParameters);
-void waterFlow(void *pvParameters);
+void waterFlowTask(void *pvParameters);
 void rfidScanner(void *pvParameters);
 void blynkTask(void *pvParameters);
-UserData getUserData(String scannedUID); // Now returns user data instead of handling logic
-void saveUserData();
-void waterFlow();
+UserData getUserData(String scannedUID); // Returns user data for a recognized card
 void IRAM_ATTR countPulse();
 
 // Function to retrieve user data based on scanned UID
@@ -124,36 +124,37 @@ void rfidScanner(void *pvParameters)
 {
   String cardUID = "";
   bool cardPresent = false;
-  int cardAbsenceCounter = 0; // Track how many times a card is missing before confirming removal
+  int cardAbsenceCounter = 0; // Tracks absence occurrences before confirming removal
 
   while (true)
   {
+    // If no new card present or card not read, check for card removal:
     if (!mfrc522.PICC_IsNewCardPresent() || !mfrc522.PICC_ReadCardSerial())
     {
       if (cardPresent)
       {
-        cardAbsenceCounter++; // Increment counter only when card was previously detected
-
+        cardAbsenceCounter++; // Increment counter when card was previously detected
         if (cardAbsenceCounter >= 5)
         {
-          float sessionUsage = totalWaterUsed; // 🔹 Capture usage before reset
+          float sessionUsage = totalWaterUsed;
           Serial.println("Card removed. Water used during session: " + String(sessionUsage) + " L");
 
-          // Update user data (optional)
+          // Update user data: accumulate water usage and deduct balance
           for (int i = 0; i < 10; i++)
           {
             if (users[i].cardUID == current_user_uid)
             {
               users[i].waterUsage += sessionUsage;
-              users[i].balance -= sessionUsage; // Example liter used
+              users[i].balance -= sessionUsage;
               break;
             }
           }
-
+          // Reset session-specific variables
           current_user_uid = "00000000";
-          pulseCount = 0; // 🔹 Reset after logging usage
+          pulseCount = 0;
           totalWaterUsed = 0.0;
-          digitalWrite(SOLENOID_VALVE, HIGH);
+          lastPulseCount = 0;                 // Reset the delta tracker
+          digitalWrite(SOLENOID_VALVE, HIGH); // Ensure valve is closed
           digitalWrite(YELLOW_LED, LOW);
           cardPresent = false;
           cardAbsenceCounter = 0;
@@ -163,8 +164,8 @@ void rfidScanner(void *pvParameters)
       continue;
     }
 
-    cardAbsenceCounter = 0; // Reset absence counter if card is detected
-
+    // Card is detected, so reset the absence counter.
+    cardAbsenceCounter = 0;
     cardUID = "";
     for (byte i = 0; i < mfrc522.uid.size; i++)
     {
@@ -178,42 +179,38 @@ void rfidScanner(void *pvParameters)
 
     UserData user = getUserData(cardUID);
 
+    // Only take new action if the card is new or different from the current one.
     if (!cardPresent || current_user_uid != user.cardUID)
     {
       if (user.userName != "Unknown")
       {
-
         Serial.println("User: " + user.userName + ", UID: " + user.cardUID +
                        ", Water Usage: " + String(user.waterUsage) + "L, Balance: " + String(user.balance) + "L");
-        digitalWrite(user.cardUID != "" ? GREEN_LED : RED_LED, HIGH);
+        digitalWrite(GREEN_LED, HIGH);
 
         if (user.balance > 0.0)
         {
-          digitalWrite(SOLENOID_VALVE, LOW); // Open the solenoid valve for the user
-          digitalWrite(YELLOW_LED, HIGH);    // Turn on the yellow LED to indicate water flow
-          Serial.println("Solenoid valve opened for: " + user.userName + " balance: " + String(user.balance) + "L");
-          waterFlow();
+          digitalWrite(SOLENOID_VALVE, LOW); // Open valve for valid users with balance
+          digitalWrite(YELLOW_LED, HIGH);
+          Serial.println("Solenoid valve opened for: " + user.userName + " with balance: " + String(user.balance) + "L");
         }
         else
         {
           Serial.println("Insufficient balance for user: " + user.userName);
-          digitalWrite(SOLENOID_VALVE, HIGH); // Close the solenoid valve
-          digitalWrite(YELLOW_LED, LOW);      // Turn off the yellow LED
-          Serial.println("Solenoid valve closed due to insufficient balance.");
+          digitalWrite(SOLENOID_VALVE, HIGH); // Close valve due to insufficient balance
+          digitalWrite(YELLOW_LED, LOW);
         }
-
         vTaskDelay(1000 / portTICK_PERIOD_MS);
-        digitalWrite(user.cardUID != "" ? GREEN_LED : RED_LED, LOW);
+        digitalWrite(GREEN_LED, LOW);
       }
       else
       {
         Serial.println("Card not recognized: " + cardUID);
         digitalWrite(RED_LED, HIGH);
-        digitalWrite(SOLENOID_VALVE, HIGH); // Close the solenoid valve
+        digitalWrite(SOLENOID_VALVE, HIGH); // Ensure valve remains closed
         vTaskDelay(1000 / portTICK_PERIOD_MS);
         digitalWrite(RED_LED, LOW);
       }
-
       current_user_uid = user.cardUID;
       cardPresent = true;
     }
@@ -222,51 +219,64 @@ void rfidScanner(void *pvParameters)
   }
 }
 
-void waterFlow()
-{
-  totalWaterUsed = pulseCount / (float)PULSES_PER_LITER; // Convert pulses to liters
-  Serial.print("Total Water Used: ");
-  Serial.print(totalWaterUsed);
-  Serial.println(" L");
-  digitalWrite(YELLOW_LED, pulseCount > 0 ? HIGH : LOW); // LED on if flow is detected
-}
-
 void waterFlowTask(void *pvParameters)
 {
   while (true)
   {
     if (current_user_uid != "00000000")
-    { // Only track if a user is present
-      totalWaterUsed = pulseCount / (float)PULSES_PER_LITER;
-      Serial.println("Current Water Usage: " + String(totalWaterUsed) + " L");
+    {                                                         // Update usage only if a user is active.
+      unsigned long newPulses = pulseCount - lastPulseCount;  // Calculate pulses since last update
+      float deltaWater = newPulses / (float)PULSES_PER_LITER; // Get new water usage in liters
+      totalWaterUsed = pulseCount / (float)PULSES_PER_LITER;  // Cumulative water usage
 
-      // Find current user and check balance
-      for (int i = 0; i < 10; i++)
+      // Only update if there was new water flow.
+      if (newPulses > 0)
       {
-        if (users[i].cardUID == current_user_uid)
-        {
-          users[i].balance -= totalWaterUsed; // Deduct used amount
+        Serial.println("Delta Water Usage: " + String(deltaWater) + " L");
+        Serial.println("Total Water Usage: " + String(totalWaterUsed) + " L");
 
-          if (users[i].balance <= 0)
-          { // Balance ran out
-            Serial.println("Balance depleted! Closing solenoid valve...");
-            digitalWrite(SOLENOID_VALVE, HIGH); // Close valve
-            digitalWrite(YELLOW_LED, LOW);      // Turn off indicator
-            current_user_uid = "00000000";      // Reset session
-            pulseCount = 0;                     // Reset pulse count
-            totalWaterUsed = 0.0;
-            break; // Exit loop
+        // Update current user's water usage and decrease balance.
+        for (int i = 0; i < 10; i++)
+        {
+          if (users[i].cardUID == current_user_uid)
+          {
+            users[i].balance -= deltaWater;
+            users[i].waterUsage += deltaWater;
+
+            // If the balance runs out, close the valve and reset the session.
+            if (users[i].balance <= 0)
+            {
+              Serial.println("Balance depleted for " + users[i].userName + "! Closing solenoid valve...");
+              digitalWrite(SOLENOID_VALVE, HIGH);
+              digitalWrite(YELLOW_LED, LOW);
+              current_user_uid = "00000000";
+              pulseCount = 0;
+              totalWaterUsed = 0.0;
+              lastPulseCount = 0;
+              break;
+            }
+            break;
           }
         }
       }
+      lastPulseCount = pulseCount; // Update the last pulse count for the next delta calculation.
     }
-    vTaskDelay(500 / portTICK_PERIOD_MS); // Update every 500ms
+    vTaskDelay(500 / portTICK_PERIOD_MS); // Update every 500ms.
   }
 }
 
 void IRAM_ATTR countPulse()
 {
-  pulseCount++; // Interrupt increases count with each pulse
+  pulseCount++; // Each rising edge increases the pulse count.
+}
+
+void blynkTask(void *pvParameters)
+{
+  while (true)
+  {
+    Blynk.run();
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+  }
 }
 
 void setup()
@@ -278,31 +288,28 @@ void setup()
   pinMode(WHITE_LED, OUTPUT);
   pinMode(FLOW_SENSOR_PIN, INPUT);
   pinMode(SOLENOID_VALVE, OUTPUT);
-  digitalWrite(SOLENOID_VALVE, HIGH);
+  digitalWrite(SOLENOID_VALVE, HIGH); // Make sure the valve is initially closed
+
+  // Start the interrupt that listens to water flow pulses.
   attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), countPulse, RISING);
 
   Serial.begin(9600);
   Serial.println("Starting SPI Communication...");
   SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN, SS_PIN);
+
   Serial.println("Initializing RFID Module...");
   mfrc522.PCD_Init();
   mfrc522.PCD_DumpVersionToSerial();
   Serial.println("RFID Scanner Ready...");
 
+  // Create FreeRTOS tasks
   xTaskCreate(rfidScanner, "RFIDScannerTask", 2048, NULL, 2, &rfidScannerTaskHandle);
   xTaskCreate(waterFlowTask, "WaterFlowMonitor", 2048, NULL, 2, &waterFlowTaskHandle);
-  // xTaskCreate(checkConnection, "CheckConnectionTask", 2048, NULL, 1, &checkConnectionTaskHandle);
-  // xTaskCreate(blynkTask, "BlynkTask", 2048, NULL, 3, NULL);
+  xTaskCreate(checkConnection, "CheckConnectionTask", 2048, NULL, 1, &checkConnectionTaskHandle);
+  xTaskCreate(blynkTask, "BlynkTask", 2048, NULL, 3, NULL);
 }
 
-void loop() {}
-
-// Define a task for Blynk.run()
-void blynkTask(void *pvParameters)
+void loop()
 {
-  while (true)
-  {
-    Blynk.run();
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-  }
+  // Nothing needed here since we are using tasks.
 }

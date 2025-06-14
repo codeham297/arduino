@@ -1,8 +1,11 @@
-#include "pins.h"
-#include "dfplayer.h"
-#include "lcd.h"
-#include "gsm.h"
-#include "alert.h"
+#include <pins.h>
+#include <dfplayer.h>
+#include <lcd.h>
+#include <gsm.h>
+#include <espcam.h>
+#include <alert.h>
+
+#include <Arduino.h>
 #include "gsm.h"
 
 void setup()

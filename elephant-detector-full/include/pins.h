@@ -17,7 +17,8 @@
 #define PIN_MP3_RX 14 // ESP32 RX ← DFPlayer TX
 
 // Buzzer Pin
-#define BUZZER 34
+#define BUZZER 32
 
 // Vibration Sensor Pin
 #define VIBRATION_SENSOR_PIN 5
+#define LED_BUILTIN 2 // Built-in LED pin for ESP32

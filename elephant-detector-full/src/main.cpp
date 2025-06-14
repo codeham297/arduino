@@ -3,6 +3,7 @@
 #include <lcd.h>
 #include <gsm.h>
 #include <espcam.h>
+#include <alert.h>
 
 #include <Arduino.h>
 #include "gsm.h"

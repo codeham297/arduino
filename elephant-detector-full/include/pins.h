@@ -5,6 +5,7 @@
 #define TFT_MOSI 23
 #define TFT_SCLK 22
 #define TFT_RST 21
+#define TOUCH_CS 34
 #define VIBRATION_SENSOR 5
 
 // SIM800L Module Pins
@@ -21,4 +22,5 @@
 
 // Vibration Sensor Pin
 #define VIBRATION_SENSOR_PIN 5
-#define LED_BUILTIN 2 // Built-in LED pin for ESP32
+#define LED_BUILTIN 2        // Built-in LED pin for ESP32
+#define LED_BUILTIN_ESPCAM 4 // Built-in LED pin for ESP32-CAM

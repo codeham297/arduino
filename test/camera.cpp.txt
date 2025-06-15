@@ -1,0 +1,11 @@
+#include <Arduino.h>
+void captureImage()
+{
+    Serial.println("Capturing image...");
+    // Your ESP32-CAM image capture logic here
+}
+void initCamera()
+{
+    Serial.println("Initializing ESP32-CAM...");
+    // Camera initialization logic here
+}

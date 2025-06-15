@@ -1,0 +1,2 @@
+void captureImage();
+void initCamera();

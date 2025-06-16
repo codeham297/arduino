@@ -11,17 +11,13 @@ void setup()
   Serial.begin(115200);
 
   // Initialize communication modules
+  initESPNow();
   initGSM();
   sendMessage("GSM Module is working!");
   initDFPlayer();
   initLCD();
   initializeAlertSystem();
-
   displayMessage("SYSTEM INITIALIZED");
-
-  // Initialize ESP-NOW with receive callback
-  initESPNow();
-
   Serial.println("System setup complete. Ready to operate.");
 }
 
@@ -35,10 +31,11 @@ SensorData sensorData;
 
 void loop()
 {
+  Serial.println("Loop of main " + received_message); // Print received message from ESP-NOW
   if (digitalRead(VIBRATION_SENSOR) == HIGH)
   {
     sensorData.vibrationDetected = true;
-    sendESPNowTrigger(); // Send ESP-NOW alert
+    // sendESPNowTrigger(); // Send ESP-NOW alert
     Serial.println("Vibration detected, checking camera...");
     displayMessage("Vibration detected!");
   }

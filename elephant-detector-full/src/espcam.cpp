@@ -1,24 +1,10 @@
-// #include "camera.h"
-// #include "espnow.h"
-// #include "espcam.h"
-// #include "pins.h"
-
-// void setup()
-// {
-//     Serial.begin(115200);
-//     initESPNow();
-//     Serial.println("ESP32-CAM unit ready and waiting for ESP-NOW alerts.");
-// }
-
-// void loop()
-// {
-//     // Nothing to do actively—camera triggers on ESP-NOW receive callback
-//     delay(1000);
-// }
+#include "camera.h"
+#include "espnow.h"
+#include "espcam.h"
+#include "pins.h"
 
 #include <rootham297-project-1_inferencing.h>
 #include "edge-impulse-sdk/dsp/image/image.hpp"
-
 #include <eloquent_esp32cam.h>
 #include <eloquent_esp32cam/extra/esp32/wifi/sta.h>
 #include <eloquent_esp32cam/viz/image_collection.h>
@@ -125,6 +111,8 @@ void setup()
 {
     // put your setup code here, to run once:
     Serial.begin(115200);
+    initESPNow();
+    Serial.println("ESP32-CAM unit ready and waiting for ESP-NOW alerts.");
     // comment out the below line to start inference immediately after upload
     while (!Serial)
         ;
@@ -189,6 +177,12 @@ void loop()
     // print the predictions
     ei_printf("Predictions (DSP: %d ms., Classification: %d ms., Anomaly: %d ms.): \n",
               result.timing.dsp, result.timing.classification, result.timing.anomaly);
+    String message = "DSP: " + String(result.timing.dsp) + " ms, " +
+                     "Classification: " + String(result.timing.classification) + " ms, " +
+                     "Anomaly: " + String(result.timing.anomaly) + " ms";
+
+    // Send the timing data using ESP-NOW
+    sendESPNowMessage(message);
 
 #if EI_CLASSIFIER_OBJECT_DETECTION == 1
     ei_printf("Object detection bounding boxes:\r\n");
@@ -206,6 +200,13 @@ void loop()
                   bb.y,
                   bb.width,
                   bb.height);
+
+        // Send the bounding box data using ESP-NOW
+        String bbox_message = "Object: " + String(bb.label) + ", Value: " + String(bb.value) +
+                              ", x: " + String(bb.x) + ", y: " + String(bb.y) +
+                              ", width: " + String(bb.width) + ", height: " + String(bb.height);
+
+        sendESPNowMessage(bbox_message);
     }
 
     // Print the prediction results (classification)

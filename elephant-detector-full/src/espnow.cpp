@@ -5,31 +5,49 @@
 
 #define ESPNOW_CHANNEL 6
 
-// Update this with the actual receiver MAC address (for sender nodes)
-uint8_t peerMac[] = {0x44, 0x1D, 0x64, 0xF3, 0xF5, 0xF8};
+// List of peer MAC addresses
+uint8_t peerMacs[][6] = {
+    {0x44, 0x1D, 0x64, 0xF3, 0xF5, 0xF8},
+    {0x68, 0x25, 0xDD, 0x33, 0xAA, 0xC4}};
+const int numPeers = sizeof(peerMacs) / sizeof(peerMacs[0]);
+
+String received_message = ""; // Global variable to store received message
 
 void onESPNowSent(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
-    Serial.print("ESP-NOW send status: ");
-    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Success" : "Fail");
+    Serial.print("ESP-NOW send status to ");
+    for (int i = 0; i < 6; i++)
+    {
+        Serial.printf("%02X", mac_addr[i]);
+        if (i < 5)
+            Serial.print(":");
+    }
+    Serial.println(status == ESP_NOW_SEND_SUCCESS ? " => Success" : " => Fail");
 }
 
 void onESPNowReceive(const uint8_t *mac_addr, const uint8_t *data, int len)
 {
-    Serial.println("ESP-NOW message received.");
-    if (data != nullptr && len > 0 && data[0] == 1)
+    Serial.print("Message received from: ");
+    for (int i = 0; i < 6; i++)
     {
-        Serial.println("Trigger signal received. Executing action...");
-        // Here you can add the action to be executed when the trigger is received
-        // For example, you can call a function to capture an image or send an alert
-        // captureImage(); // Example function call
+        Serial.printf("%02X", mac_addr[i]);
+        if (i < 5)
+            Serial.print(":");
+    }
+    Serial.println();
+
+    if (data != nullptr && len > 0)
+    {
+        String receivedMsg = String((char *)data); // Convert byte array to string
+        received_message = receivedMsg;            // Store the received message globally
+        Serial.print("Received message: ");
+        Serial.println(receivedMsg);
     }
     else
     {
-        Serial.println("Received data is invalid or not a trigger signal.");
+        Serial.println("Received invalid or empty data.");
     }
 }
-
 void initWiFiForESPNOW()
 {
     WiFi.mode(WIFI_STA);
@@ -54,19 +72,29 @@ void initESPNow()
     esp_now_register_send_cb(onESPNowSent);
     esp_now_register_recv_cb(onESPNowReceive);
 
-    esp_now_peer_info_t peerInfo = {};
-    memcpy(peerInfo.peer_addr, peerMac, 6);
-    peerInfo.channel = ESPNOW_CHANNEL;
-    peerInfo.ifidx = WIFI_IF_STA;
-    peerInfo.encrypt = false;
-
-    if (!esp_now_is_peer_exist(peerMac))
+    for (int i = 0; i < numPeers; i++)
     {
-        if (esp_now_add_peer(&peerInfo) != ESP_OK)
+        esp_now_peer_info_t peerInfo = {};
+        memcpy(peerInfo.peer_addr, peerMacs[i], 6);
+        peerInfo.channel = ESPNOW_CHANNEL;
+        peerInfo.ifidx = WIFI_IF_STA;
+        peerInfo.encrypt = false;
+
+        if (!esp_now_is_peer_exist(peerMacs[i]))
         {
-            Serial.println("Failed to register ESP-NOW peer");
-            while (true)
-                ;
+            if (esp_now_add_peer(&peerInfo) != ESP_OK)
+            {
+                Serial.print("Failed to register ESP-NOW peer: ");
+                for (int j = 0; j < 6; j++)
+                {
+                    Serial.printf("%02X", peerMacs[i][j]);
+                    if (j < 5)
+                        Serial.print(":");
+                }
+                Serial.println();
+                while (true)
+                    ;
+            }
         }
     }
 }
@@ -74,12 +102,45 @@ void initESPNow()
 void sendESPNowTrigger()
 {
     uint8_t message[1] = {1}; // Trigger signal
-    if (esp_now_send(peerMac, message, sizeof(message)) != ESP_OK)
+
+    for (int i = 0; i < numPeers; i++)
     {
-        Serial.println("ESP-NOW send failed");
+        if (esp_now_send(peerMacs[i], message, sizeof(message)) != ESP_OK)
+        {
+            Serial.print("ESP-NOW send failed to: ");
+        }
+        else
+        {
+            Serial.print("ESP-NOW trigger sent to: ");
+        }
+
+        for (int j = 0; j < 6; j++)
+        {
+            Serial.printf("%02X", peerMacs[i][j]);
+            if (j < 5)
+                Serial.print(":");
+        }
+        Serial.println();
     }
-    else
+}
+
+void sendESPNowMessage(String message)
+{
+    uint8_t data[message.length() + 1];
+    message.getBytes(data, message.length() + 1);
+
+    for (int i = 0; i < numPeers; i++)
     {
-        Serial.println("ESP-NOW trigger sent.");
+        esp_err_t result = esp_now_send(peerMacs[i], data, sizeof(data));
+
+        Serial.print("Sending message to: ");
+        for (int j = 0; j < 6; j++)
+        {
+            Serial.printf("%02X", peerMacs[i][j]);
+            if (j < 5)
+                Serial.print(":");
+        }
+
+        Serial.println(result == ESP_OK ? " => Success" : " => Fail");
     }
 }

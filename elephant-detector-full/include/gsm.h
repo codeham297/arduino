@@ -7,5 +7,7 @@
 
 void initGSM();
 void sendMessage(const char *message);
+String checkNetwork();
+String getSignalStrength();
 
 #endif

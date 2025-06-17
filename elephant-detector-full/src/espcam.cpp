@@ -177,12 +177,7 @@ void loop()
     // print the predictions
     ei_printf("Predictions (DSP: %d ms., Classification: %d ms., Anomaly: %d ms.): \n",
               result.timing.dsp, result.timing.classification, result.timing.anomaly);
-    String message = "DSP: " + String(result.timing.dsp) + " ms, " +
-                     "Classification: " + String(result.timing.classification) + " ms, " +
-                     "Anomaly: " + String(result.timing.anomaly) + " ms";
 
-    // Send the timing data using ESP-NOW
-    sendESPNowMessage(message);
 
 #if EI_CLASSIFIER_OBJECT_DETECTION == 1
     ei_printf("Object detection bounding boxes:\r\n");

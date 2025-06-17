@@ -42,16 +42,97 @@ void initGSM()
 
 void sendMessage(const char *message)
 {
-    SerialMon.println("Sending SMS...");
+    int retryCount = 0;
+    const int maxRetries = 5;
 
-    bool sent = modem.sendSMS(ADMIN_NUMBER, message);
-
-    if (sent)
+    while (retryCount < maxRetries)
     {
-        SerialMon.println("SMS sent successfully!");
+        SerialMon.print("Attempting to send SMS (Try ");
+        SerialMon.print(retryCount + 1);
+        SerialMon.println(" of 5)...");
+
+        bool sent = modem.sendSMS(ADMIN_NUMBER, message);
+
+        if (sent)
+        {
+            SerialMon.println("SMS sent successfully!");
+            return;
+            retryCount = 0; // Reset retry count on success
+        }
+        else
+        {
+            SerialMon.println("SMS failed to send.");
+            retryCount++;
+
+            SerialMon.println("Checking network before retry...");
+            String networkStatus = checkNetwork();
+
+            if (networkStatus.indexOf("Not Connected") >= 0)
+            {
+                SerialMon.println("Reinitializing GSM module...");
+                initGSM();
+            }
+
+            delay(5000); // Wait before retrying
+        }
+    }
+
+    SerialMon.println("Failed to send SMS after 5 attempts.");
+}
+
+// Function to check network status
+
+// Usage
+//  String networkStatus = checkNetwork();
+//  SerialMon.println("Current Network Status: " + networkStatus);
+
+String checkNetwork()
+{
+    SerialMon.print("Checking network status...");
+    SerialAT.print("AT+CREG?\r");
+    delay(2000);
+
+    if (SerialAT.available())
+    {
+        String networkStatus = SerialAT.readString();
+        SerialMon.println(" Network Status: " + networkStatus);
+
+        if (networkStatus.indexOf("+CREG: 0,1") > 0 || networkStatus.indexOf("+CREG: 0,5") > 0)
+        {
+            return "Connected";
+        }
+        else
+        {
+            return "Not Connected, trying to connect...";
+            initGSM(); // Reinitialize GSM to try reconnecting
+        }
     }
     else
     {
-        SerialMon.println("SMS failed to send.");
+        SerialMon.println(" No response from modem.");
+        return "Unknown";
+    }
+}
+
+// Function to check signal strength
+// Usage
+// String signalStrength = getSignalStrength();
+// SerialMon.println("Current Signal Strength: " + signalStrength);
+
+String getSignalStrength()
+{
+    SerialMon.print("Checking signal strength...");
+    SerialAT.print("AT+CSQ\r");
+    delay(1000);
+
+    if (SerialAT.available())
+    {
+        String response = SerialAT.readString();
+        SerialMon.println(" Signal Strength Response: " + response);
+        return response;
+    }
+    else
+    {
+        return "No response from modem.";
     }
 }

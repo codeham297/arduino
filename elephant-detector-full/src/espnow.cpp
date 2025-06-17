@@ -27,21 +27,21 @@ void onESPNowSent(const uint8_t *mac_addr, esp_now_send_status_t status)
 
 void onESPNowReceive(const uint8_t *mac_addr, const uint8_t *data, int len)
 {
-    Serial.print("Message received from: ");
-    for (int i = 0; i < 6; i++)
-    {
-        Serial.printf("%02X", mac_addr[i]);
-        if (i < 5)
-            Serial.print(":");
-    }
-    Serial.println();
+    // Serial.print("Message received from: ");
+    // for (int i = 0; i < 6; i++)
+    // {
+    //     Serial.printf("%02X", mac_addr[i]);
+    //     if (i < 5)
+    //         Serial.print(":");
+    // }
+    // Serial.println();
 
     if (data != nullptr && len > 0)
     {
         String receivedMsg = String((char *)data); // Convert byte array to string
         received_message = receivedMsg;            // Store the received message globally
-        Serial.print("Received message: ");
-        Serial.println(receivedMsg);
+        // Serial.print("Received message: ");
+        // Serial.println(receivedMsg);
     }
     else
     {

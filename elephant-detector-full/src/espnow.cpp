@@ -1,6 +1,3 @@
-#include <WiFi.h>
-#include <esp_now.h>
-#include <esp_wifi.h>
 #include "espnow.h"
 
 #define ESPNOW_CHANNEL 6

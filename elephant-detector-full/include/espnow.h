@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include <esp_now.h> // 🔧 Add this
 #include <stdint.h>
+#include <esp_wifi.h>
 
 void initESPNow();
 void sendESPNowTrigger();

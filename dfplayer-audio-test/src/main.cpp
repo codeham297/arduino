@@ -1,8 +1,8 @@
 #include "DFRobotDFPlayerMini.h"
 
 // Pin definitions for DFPlayer Mini on UART1
-#define PIN_MP3_TX 13 // ESP32 TX → DFPlayer RX
-#define PIN_MP3_RX 14 // ESP32 RX ← DFPlayer TX
+#define PIN_MP3_TX 14 // ESP32 TX → DFPlayer RX
+#define PIN_MP3_RX 13 // ESP32 RX ← DFPlayer TX
 
 HardwareSerial mp3Serial(1); // Use UART1
 DFRobotDFPlayerMini player;
@@ -23,7 +23,7 @@ void tryToConnectDFPlayer(int maxAttempts = 5)
     if (player.begin(mp3Serial))
     {
       Serial.println("DFPlayer Mini initialized!");
-      player.volume(25);         // Set initial volume once
+      player.volume(50);         // Set initial volume once
       player.play(currentTrack); // Optional: play startup track
       playerReady = true;
       return;

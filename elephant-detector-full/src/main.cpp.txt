@@ -61,7 +61,6 @@ void setup()
   initGSM();
   xTaskCreate(initVibrationTask, "VibrationTask", 4096, NULL, 1, &vibrationTaskHandle);
   xTaskCreate(initAlertTask, "AlertTask", 2048, NULL, 1, NULL);
-
   Serial.println("System setup complete. Ready to operate.");
   playTrack(5);
   xTaskCreate(initESPNowTask, "ESPNowTask", 4096, NULL, 1, NULL);

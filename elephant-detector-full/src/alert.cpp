@@ -1,19 +1,26 @@
 #include "alert.h"
+#include "dfplayer.h"
 
 void initializeAlertSystem()
 {
-    pinMode(BUZZER, OUTPUT);          // Set buzzer pin as output
-    pinMode(VIBRATION_SENSOR, INPUT); // Set vibration sensor pin as input
-    digitalWrite(BUZZER, LOW);        // Ensure buzzer is off initially
+    pinMode(BUZZER, OUTPUT);   // Set buzzer pin as output
+    digitalWrite(BUZZER, LOW); // Ensure buzzer is off initially
     Serial.println("Alert system initialized.");
 }
-
 void triggerAlert(const char *message)
 {
     Serial.println("ALERT: Sending emergency notification...");
-    sendMessage(message);                   // Send an emergency SMS
-    displayMessage("ALERT: Check System!"); // Show alert on LCD
-    activateBuzzer();                       // Trigger buzzer for an audible warning
+
+    String alertMsg = "DANGER ";
+    alertMsg += message;
+    alertMsg.toUpperCase(); // Convert entire message to uppercase
+    alertMsg += " ALERTING AUTHORITIES";
+
+    displayMessage(alertMsg.c_str()); // Convert back to const char* for LCD
+    playTrack(1);
+    sendMessage(message); // Send original message via SMS
+    activateBuzzer();     // Trigger audible alert
+    playTrack(4);
 }
 
 void activateBuzzer()

@@ -4,6 +4,9 @@
 #define TINY_GSM_MODEM_SIM800
 #include <TinyGsmClient.h>
 #include "pins.h"
+#include "esp_task_wdt.h"
+#include "lcd.h"
+#include "blynk.h"
 
 void initGSM();
 void sendMessage(const char *message);

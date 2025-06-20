@@ -1,13 +1,9 @@
-#ifndef LCD_H
-#define LCD_H
 
-#include "pins.h"
-#include <Adafruit_GFX.h>
-#include <Adafruit_ST7735.h>
-#include <SPI.h>
 #include "pins.h" // Centralized pin definitions
+#include <Arduino.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
 
 void initLCD();
 void displayMessage(const char *message);
-
-#endif
+void clearLCD();

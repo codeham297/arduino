@@ -1,0 +1,275 @@
+/* Fill-in information from Blynk Device Info here */
+
+#include "blynk.h"
+#include "espnow.h"
+
+#include <BlynkSimpleEsp32.h>
+// #define ESPNOW_CHANNEL 6
+
+// List of peer MAC addresses
+uint8_t peerMacs[][6] = {
+    {0x44, 0x1D, 0x64, 0xF3, 0xF5, 0xF8},
+    {0x44, 0x1D, 0x64, 0xF3, 0xF5, 0xF8}};
+const int numPeers = sizeof(peerMacs) / sizeof(peerMacs[0]);
+
+String received_message = ""; // Global variable to store received message
+
+void onESPNowSent(const uint8_t *mac_addr, esp_now_send_status_t status)
+{
+    Serial.print("ESP-NOW send status to ");
+    for (int i = 0; i < 6; i++)
+    {
+        Serial.printf("%02X", mac_addr[i]);
+        if (i < 5)
+            Serial.print(":");
+    }
+    Serial.println(status == ESP_NOW_SEND_SUCCESS ? " => Success" : " => Fail");
+}
+
+void onESPNowReceive(const uint8_t *mac_addr, const uint8_t *data, int len)
+{
+    // Serial.print("Message received from: ");
+    // for (int i = 0; i < 6; i++)
+    // {
+    //     Serial.printf("%02X", mac_addr[i]);
+    //     if (i < 5)
+    //         Serial.print(":");
+    // }
+    // Serial.println();
+
+    if (data != nullptr && len > 0)
+    {
+        String receivedMsg = String((char *)data); // Convert byte array to string
+        received_message = receivedMsg;            // Store the received message globally
+        // Serial.print("Received message: ");
+        // Serial.println(receivedMsg);
+    }
+    else
+    {
+        Serial.println("Received invalid or empty data.");
+    }
+}
+// void initWiFiForESPNOW()
+// {
+//     WiFi.mode(WIFI_STA);
+//     WiFi.disconnect();
+//     delay(100);
+//     esp_wifi_set_promiscuous(true);
+//     esp_wifi_set_channel(ESPNOW_CHANNEL, WIFI_SECOND_CHAN_NONE);
+//     esp_wifi_set_promiscuous(false);
+// }
+
+// void initESPNow()
+// {
+//     initWiFiForESPNOW();
+
+//     if (esp_now_init() != ESP_OK)
+//     {
+//         Serial.println("ESP-NOW init failed");
+//         while (true)
+//             ;
+//     }
+
+//     esp_now_register_send_cb(onESPNowSent);
+//     esp_now_register_recv_cb(onESPNowReceive);
+
+//     for (int i = 0; i < numPeers; i++)
+//     {
+//         esp_now_peer_info_t peerInfo = {};
+//         memcpy(peerInfo.peer_addr, peerMacs[i], 6);
+//         peerInfo.channel = ESPNOW_CHANNEL;
+//         peerInfo.ifidx = WIFI_IF_STA;
+//         peerInfo.encrypt = false;
+
+//         if (!esp_now_is_peer_exist(peerMacs[i]))
+//         {
+//             if (esp_now_add_peer(&peerInfo) != ESP_OK)
+//             {
+//                 Serial.print("Failed to register ESP-NOW peer: ");
+//                 for (int j = 0; j < 6; j++)
+//                 {
+//                     Serial.printf("%02X", peerMacs[i][j]);
+//                     if (j < 5)
+//                         Serial.print(":");
+//                 }
+//                 Serial.println();
+//                 while (true)
+//                     ;
+//             }
+//         }
+//     }
+// }
+
+// void initESPNow()
+// {
+//     // Ensure Wi-Fi is in STA mode
+//     WiFi.mode(WIFI_STA);
+//     WiFi.begin(ssid, pass);
+
+//     // Wait for Wi-Fi to connect (required to get correct channel)
+//     while (WiFi.status() != WL_CONNECTED)
+//     {
+//         delay(100);
+//         Serial.print(".");
+//     }
+//     Serial.println("\nWi-Fi connected for ESP-NOW");
+
+//     // Retrieve current Wi-Fi channel used by the router
+//     uint8_t primaryChan;
+//     wifi_second_chan_t secondChan;
+//     esp_wifi_get_channel(&primaryChan, &secondChan);
+
+//     // Force ESP-NOW to use the same channel
+//     esp_wifi_set_promiscuous(true);
+//     esp_wifi_set_channel(primaryChan, WIFI_SECOND_CHAN_NONE);
+//     esp_wifi_set_promiscuous(false);
+//     Serial.print("ESP-NOW channel aligned to Wi-Fi channel: ");
+//     Serial.println(primaryChan);
+
+//     // Initialize ESP-NOW
+//     if (esp_now_init() != ESP_OK)
+//     {
+//         Serial.println("ESP-NOW init failed");
+//         return;
+//     }
+
+//     // Register callbacks
+//     esp_now_register_send_cb(onESPNowSent);
+//     esp_now_register_recv_cb(onESPNowReceive);
+
+//     // Register peers
+//     for (int i = 0; i < numPeers; i++)
+//     {
+//         esp_now_peer_info_t peerInfo = {};
+//         memcpy(peerInfo.peer_addr, peerMacs[i], 6);
+//         peerInfo.channel = primaryChan;
+//         peerInfo.ifidx = WIFI_IF_STA;
+//         peerInfo.encrypt = false;
+
+//         if (!esp_now_is_peer_exist(peerMacs[i]))
+//         {
+//             if (esp_now_add_peer(&peerInfo) != ESP_OK)
+//             {
+//                 Serial.print("Failed to register ESP-NOW peer: ");
+//                 for (int j = 0; j < 6; j++)
+//                 {
+//                     Serial.printf("%02X", peerMacs[i][j]);
+//                     if (j < 5)
+//                         Serial.print(":");
+//                 }
+//                 Serial.println();
+//             }
+//         }
+//     }
+
+//     Serial.println("ESP-NOW initialized successfully.");
+// }
+
+void initESPNow()
+{
+    // Wait until Wi-Fi is connected AND Blynk is authenticated
+    while (WiFi.status() != WL_CONNECTED || !Blynk.connected())
+    {
+        Blynk.run(); // Necessary to complete Blynk auth handshake
+        delay(100);
+        Serial.print(".");
+    }
+    Serial.println("\nWi-Fi + Blynk connected");
+
+    // Get the Wi-Fi channel Blynk locked onto
+    uint8_t primaryChan;
+    wifi_second_chan_t secondChan;
+    esp_wifi_get_channel(&primaryChan, &secondChan);
+
+    // Align ESP-NOW to that channel
+    esp_wifi_set_promiscuous(true);
+    esp_wifi_set_channel(primaryChan, WIFI_SECOND_CHAN_NONE);
+    esp_wifi_set_promiscuous(false);
+
+    Serial.print("ESP-NOW channel aligned to Wi-Fi channel: ");
+    Serial.println(primaryChan);
+
+    // Initialize ESP-NOW
+    if (esp_now_init() != ESP_OK)
+    {
+        Serial.println("ESP-NOW init failed");
+        return;
+    }
+
+    esp_now_register_send_cb(onESPNowSent);
+    esp_now_register_recv_cb(onESPNowReceive);
+
+    // Add peers
+    for (int i = 0; i < numPeers; i++)
+    {
+        esp_now_peer_info_t peerInfo = {};
+        memcpy(peerInfo.peer_addr, peerMacs[i], 6);
+        peerInfo.channel = primaryChan;
+        peerInfo.ifidx = WIFI_IF_STA;
+        peerInfo.encrypt = false;
+
+        if (!esp_now_is_peer_exist(peerMacs[i]))
+        {
+            if (esp_now_add_peer(&peerInfo) != ESP_OK)
+            {
+                Serial.print("Failed to add peer: ");
+                for (int j = 0; j < 6; j++)
+                {
+                    Serial.printf("%02X", peerMacs[i][j]);
+                    if (j < 5)
+                        Serial.print(":");
+                }
+                Serial.println();
+            }
+        }
+    }
+
+    Serial.println("ESP-NOW initialized successfully.");
+}
+
+void sendESPNowTrigger()
+{
+    uint8_t message[1] = {1}; // Trigger signal
+
+    for (int i = 0; i < numPeers; i++)
+    {
+        if (esp_now_send(peerMacs[i], message, sizeof(message)) != ESP_OK)
+        {
+            Serial.print("ESP-NOW send failed to: ");
+        }
+        else
+        {
+            Serial.print("ESP-NOW trigger sent to: ");
+        }
+
+        for (int j = 0; j < 6; j++)
+        {
+            Serial.printf("%02X", peerMacs[i][j]);
+            if (j < 5)
+                Serial.print(":");
+        }
+        Serial.println();
+    }
+}
+
+void sendESPNowMessage(String message)
+{
+    uint8_t data[message.length() + 1];
+    message.getBytes(data, message.length() + 1);
+
+    for (int i = 0; i < numPeers; i++)
+    {
+        esp_err_t result = esp_now_send(peerMacs[i], data, sizeof(data));
+
+        Serial.print("Sending message to: ");
+        for (int j = 0; j < 6; j++)
+        {
+            Serial.printf("%02X", peerMacs[i][j]);
+            if (j < 5)
+                Serial.print(":");
+        }
+
+        Serial.println(result == ESP_OK ? " => Success" : " => Fail");
+        Serial.println("Message: " + message + " Sent");
+    }
+}

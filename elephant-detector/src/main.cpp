@@ -1,7 +1,11 @@
 // Blynk Credentials
-#define BLYNK_TEMPLATE_ID "TMPL2fA5FeDds"
-#define BLYNK_TEMPLATE_NAME "METER"
-#define BLYNK_AUTH_TOKEN "iGxpZ0h7AciY9yFXXB4UmwE22eVocKIO"
+// #define BLYNK_TEMPLATE_ID "TMPL2fA5FeDds"
+// #define BLYNK_TEMPLATE_NAME "METER"
+// #define BLYNK_AUTH_TOKEN "iGxpZ0h7AciY9yFXXB4UmwE22eVocKIO"
+
+#define BLYNK_TEMPLATE_ID "TMPL2YGlOqIDH"
+#define BLYNK_TEMPLATE_NAME "Quickstart Template"
+#define BLYNK_AUTH_TOKEN "aRVL3_FaoDTl2kcJ6C7dGumSAsXomeg6"
 
 #include <SoftwareSerial.h>
 #include <WiFi.h>

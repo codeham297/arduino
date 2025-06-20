@@ -5,7 +5,7 @@
 // List of peer MAC addresses
 uint8_t peerMacs[][6] = {
     {0x44, 0x1D, 0x64, 0xF3, 0xF5, 0xF8},
-    {0x68, 0x25, 0xDD, 0x33, 0xAA, 0xC4}};
+    {0x44, 0x25, 0xDD, 0x33, 0xAA, 0xC4}};
 const int numPeers = sizeof(peerMacs) / sizeof(peerMacs[0]);
 
 String received_message = ""; // Global variable to store received message
@@ -139,5 +139,6 @@ void sendESPNowMessage(String message)
         }
 
         Serial.println(result == ESP_OK ? " => Success" : " => Fail");
+        Serial.println("Message: " + message + " Sent");
     }
 }

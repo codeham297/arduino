@@ -1,21 +1,44 @@
-#include "lcd.h"
-
-Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
+#include <lcd.h>
+// Define LCD address and size
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 void initLCD()
 {
-    Serial.begin(115200);
-    Serial.println(F("Initializing TFT Display..."));
-    tft.initR(INITR_MINI160x80); // 160x80 display initialization
-    tft.fillScreen(ST77XX_BLACK);
-    Serial.println(F("TFT Initialized"));
+
+    // Initialize LCD
+    lcd.init();
+    lcd.backlight(); // Turn on LCD backlight
+    lcd.clear();     // Clear display
+    lcd.setCursor(0, 0);
+    lcd.print("LCD Ready!"); // Test message
+    delay(1000);
+    lcd.clear();
 }
 
 void displayMessage(const char *message)
 {
-    tft.fillScreen(ST77XX_BLACK);
-    tft.setCursor(10, 40); // Adjust position
-    tft.setTextColor(ST77XX_WHITE);
-    tft.setTextSize(2);
-    tft.println(message);
+    lcd.clear(); // Clear previous message
+
+    // Print first line (up to 16 characters)
+    lcd.setCursor(0, 0);
+    for (int i = 0; i < 16 && message[i] != '\0'; i++)
+    {
+        lcd.print(message[i]);
+    }
+
+    // Print second line if there is more text
+    if (strlen(message) > 16)
+    {
+        lcd.setCursor(0, 1);
+        for (int i = 16; i < 32 && message[i] != '\0'; i++)
+        {
+            lcd.print(message[i]);
+        }
+    }
+    delay(1000); // Wait a bit before clearing or changing
+}
+void clearLCD()
+{
+    lcd.clear();         // Clear the LCD display
+    lcd.setCursor(0, 0); // Reset cursor position to the top-left corner
 }

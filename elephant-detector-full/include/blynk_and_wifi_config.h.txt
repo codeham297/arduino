@@ -1,0 +1,17 @@
+// blynk_config.h
+#ifndef BLYNK_CONFIG_H
+#define BLYNK_CONFIG_H
+
+const char *ssid = "ESP32_AP";
+const char *pass = "00000000";
+#define BLYNK_TEMPLATE_ID "TMPL2YGlOqIDH"
+#define BLYNK_TEMPLATE_NAME "Quickstart Template"
+#define BLYNK_AUTH_TOKEN "4jEvDDqL5x31mbRyx8v-MY3QQcp-UYmi"
+/* Comment this out to disable prints and save space */
+#define BLYNK_PRINT Serial
+
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <BlynkSimpleEsp32.h>
+
+#endif

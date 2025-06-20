@@ -9,5 +9,5 @@
 void initDFPlayer();
 void tryToConnectDFPlayer(int maxAttempts = 5);
 void playNextTrack();
-
+void playTrack(int track);
 #endif

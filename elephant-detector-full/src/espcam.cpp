@@ -1,9 +1,8 @@
-#include "camera.h"
 #include "espnow.h"
 #include "espcam.h"
 #include "pins.h"
 
-#include <rootham297-project-1_inferencing.h>
+#include <elephantdetector_inferencing.h>
 #include "edge-impulse-sdk/dsp/image/image.hpp"
 #include <eloquent_esp32cam.h>
 #include <eloquent_esp32cam/extra/esp32/wifi/sta.h>
@@ -175,12 +174,11 @@ void loop()
     }
 
     // print the predictions
-    ei_printf("Predictions (DSP: %d ms., Classification: %d ms., Anomaly: %d ms.): \n",
-              result.timing.dsp, result.timing.classification, result.timing.anomaly);
-
+    // ei_printf("Predictions (DSP: %d ms., Classification: %d ms., Anomaly: %d ms.): \n",
+    //   result.timing.dsp, result.timing.classification, result.timing.anomaly);
 
 #if EI_CLASSIFIER_OBJECT_DETECTION == 1
-    ei_printf("Object detection bounding boxes:\r\n");
+    // ei_printf("Object detection bounding boxes:\r\n");
     for (uint32_t i = 0; i < result.bounding_boxes_count; i++)
     {
         ei_impulse_result_bounding_box_t bb = result.bounding_boxes[i];
@@ -188,19 +186,16 @@ void loop()
         {
             continue;
         }
-        ei_printf("  %s (%f) [ x: %u, y: %u, width: %u, height: %u ]\r\n",
-                  bb.label,
-                  bb.value,
-                  bb.x,
-                  bb.y,
-                  bb.width,
-                  bb.height);
+        //   ei_printf("  %s (%f) [ x: %u, y: %u, width: %u, height: %u ]\r\n",
+        //             bb.label,
+        //             bb.value,
+        //             bb.x,
+        //             bb.y,
+        //             bb.width,
+        //             bb.height);
 
         // Send the bounding box data using ESP-NOW
-        String bbox_message = "Object: " + String(bb.label) + ", Value: " + String(bb.value) +
-                              ", x: " + String(bb.x) + ", y: " + String(bb.y) +
-                              ", width: " + String(bb.width) + ", height: " + String(bb.height);
-
+        String bbox_message = " " + String(bb.label);
         sendESPNowMessage(bbox_message);
     }
 

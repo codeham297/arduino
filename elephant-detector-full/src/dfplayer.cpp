@@ -3,7 +3,7 @@
 HardwareSerial mp3Serial(2); // Use UART2 for DFPlayer Mini
 DFRobotDFPlayerMini player;
 
-int currentTrack = 1;
+int currentTrack = 4;
 unsigned long previousMillis = 0;
 const unsigned long interval = 5000; // 5 seconds between tracks
 bool playerReady = false;
@@ -19,8 +19,8 @@ void tryToConnectDFPlayer(int maxAttempts)
         if (player.begin(mp3Serial))
         {
             Serial.println("DFPlayer Mini initialized!");
-            player.volume(25);
-            player.play(currentTrack); // Optional: play startup track
+            player.volume(30);
+            player.play(2); // Optional: play startup track
             playerReady = true;
             return;
         }
@@ -56,6 +56,24 @@ void playNextTrack()
         player.play(currentTrack);
         Serial.print("Now playing track ");
         Serial.println(currentTrack);
+
+        previousMillis = currentMillis;
+    }
+}
+
+void playTrack(int track)
+{
+    if (!playerReady)
+        return;
+    if (player.readState() == 1)
+    {
+        return;
+    }
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval)
+    {
+        player.play(track);
+        Serial.println("Now playing track " + track);
 
         previousMillis = currentMillis;
     }

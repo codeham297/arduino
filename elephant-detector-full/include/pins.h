@@ -1,10 +1,5 @@
-
-// LCD Display Pins
-#define SERIAL_SCL_PIN 23 // SCL (I2C Clock) for LCD Display
-#define SERIAL_SDA_PIN 22 // SDA (I2C Data) for LCD Display
-
-#define VIB_SDA_PIN 18 // SDA (I2C Data) for Vibration Sensor
-#define VIB_SCL_PIN 5  // SCL (I2C Clock) for Vibration Sensor
+#define SDA_PIN 18 // SDA (I2C Data) for Vibration Sensor and LCD
+#define SCL_PIN 5  // SCL (I2C Clock) for Vibration Sensor and LCD
 
 // SIM800L Module Pins
 #define SIM800_RST 4

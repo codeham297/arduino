@@ -1,9 +1,9 @@
 #include "gsm.h"
+#include "dfplayer.h"
 
 // Define GSM pins
 #define SIM800_TXD 16
 #define SIM800_RXD 17
-
 #define ADMIN_NUMBER "+255759469432"
 
 #define SerialMon Serial
@@ -11,22 +11,31 @@
 
 TinyGsm modem(SerialAT);
 
+// Optional: Configure TinyGSM timeout
+#define MODEM_TIMEOUT_MS 10000
+
 void initGSM()
 {
-    SerialMon.begin(115200);
     delay(1000);
+    SerialMon.begin(115200);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
 
     SerialMon.println("Wait ...");
     SerialAT.begin(9600, SERIAL_8N1, SIM800_TXD, SIM800_RXD);
-    delay(3000);
+    vTaskDelay(3000 / portTICK_PERIOD_MS);
 
     SerialMon.println("Initializing modem ...");
-    modem.restart();
+    SerialAT.setTimeout(MODEM_TIMEOUT_MS);
+    modem.restart(); // Blocking, but OK with delay after
 
     SerialMon.print("Waiting for network...");
-    if (!modem.waitForNetwork())
+    if (!modem.waitForNetwork(30)) // Timeout after 30s
     {
         SerialMon.println(" fail");
+        displayMessage("NETWORK FAILURE");
+        playTrack(3);
+        checkBlynkConnection();
+        sendData("CONNECTED");
         return;
     }
     SerialMon.println(" success");
@@ -34,63 +43,45 @@ void initGSM()
     if (modem.isNetworkConnected())
     {
         SerialMon.println("Network connected");
+        displayMessage("CONNECTED");
+        sendMessage("CONNECTED");
+        sendData("CONNECTED");
     }
 
     SerialAT.print("AT+CNMI=2,2,0,0,0\r");
-    delay(1000);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
 }
 
 void sendMessage(const char *message)
 {
-    int retryCount = 0;
-    const int maxRetries = 5;
+    sendData(message);
+    bool sent = modem.sendSMS(ADMIN_NUMBER, message);
 
-    while (retryCount < maxRetries)
+    if (sent)
     {
-        SerialMon.print("Attempting to send SMS (Try ");
-        SerialMon.print(retryCount + 1);
-        SerialMon.println(" of 5)...");
-
-        bool sent = modem.sendSMS(ADMIN_NUMBER, message);
-
-        if (sent)
-        {
-            SerialMon.println("SMS sent successfully!");
-            return;
-            retryCount = 0; // Reset retry count on success
-        }
-        else
-        {
-            SerialMon.println("SMS failed to send.");
-            retryCount++;
-
-            SerialMon.println("Checking network before retry...");
-            String networkStatus = checkNetwork();
-
-            if (networkStatus.indexOf("Not Connected") >= 0)
-            {
-                SerialMon.println("Reinitializing GSM module...");
-                initGSM();
-            }
-
-            delay(5000); // Wait before retrying
-        }
+        displayMessage("SMS SENT");
+        return;
     }
 
-    SerialMon.println("Failed to send SMS after 5 attempts.");
+    // String networkStatus = checkNetwork();
+    // if (networkStatus.indexOf("Not Connected") >= 0)
+    // {
+    //     SerialMon.println("Skipping GSM reinitialization to avoid watchdog conflict.");
+    //     // Optionally: set a flag here for main task to reinit
+    // }
+
+    esp_task_wdt_reset();                  // Feed the watchdog
+    vTaskDelay(5000 / portTICK_PERIOD_MS); // Wait before retrying
+    displayMessage("NOT SENT");
+
+    SerialMon.println("Failed to send SMS after retries.");
 }
-
-// Function to check network status
-
-// Usage
-//  String networkStatus = checkNetwork();
-//  SerialMon.println("Current Network Status: " + networkStatus);
 
 String checkNetwork()
 {
-    SerialMon.print("Checking network status...");
+    SerialMon.println("Checking network status...");
     SerialAT.print("AT+CREG?\r");
-    delay(2000);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
 
     if (SerialAT.available())
     {
@@ -101,29 +92,20 @@ String checkNetwork()
         {
             return "Connected";
         }
-        else
-        {
-            return "Not Connected, trying to connect...";
-            initGSM(); // Reinitialize GSM to try reconnecting
-        }
+        return "Not Connected, trying to connect...";
     }
     else
     {
-        SerialMon.println(" No response from modem.");
+        SerialMon.println("No response from modem.");
         return "Unknown";
     }
 }
 
-// Function to check signal strength
-// Usage
-// String signalStrength = getSignalStrength();
-// SerialMon.println("Current Signal Strength: " + signalStrength);
-
 String getSignalStrength()
 {
-    SerialMon.print("Checking signal strength...");
+    SerialMon.println("Checking signal strength...");
     SerialAT.print("AT+CSQ\r");
-    delay(1000);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
 
     if (SerialAT.available())
     {
@@ -131,8 +113,5 @@ String getSignalStrength()
         SerialMon.println(" Signal Strength Response: " + response);
         return response;
     }
-    else
-    {
-        return "No response from modem.";
-    }
+    return "No response from modem.";
 }

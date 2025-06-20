@@ -15,8 +15,6 @@
 /* RTOS Task Handle */
 TaskHandle_t vibrationTaskHandle;
 
-String blynk_message = "";
-
 void initESPNowTask(void *pvParameters)
 {
   initESPNow();
@@ -51,16 +49,18 @@ void initAlertTask(void *pvParameters)
 
 void setup()
 {
+  pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(115200);
   Serial.println("Initializing system...");
   xTaskCreate(initLCDTask, "LCDTask", 4096, NULL, 1, NULL);
   initI2CBuses(); // Initialize I2C buses for LCD and vibration sensor
-  xTaskCreate(BlynkManagerTask, "BlynkTask", 4096, NULL, 1, NULL);
+  // xTaskCreate(BlynkManagerTask, "BlynkTask", 4096, NULL, 1, NULL);
   // xTaskCreate(initGSMTask, "GSMTask", 8192, NULL, 1, NULL);
   xTaskCreate(initDFPlayerTask, "DFPlayerTask", 2048, NULL, 1, NULL);
   initGSM();
   xTaskCreate(initVibrationTask, "VibrationTask", 4096, NULL, 1, &vibrationTaskHandle);
   xTaskCreate(initAlertTask, "AlertTask", 2048, NULL, 1, NULL);
+
   Serial.println("System setup complete. Ready to operate.");
   playTrack(5);
   xTaskCreate(initESPNowTask, "ESPNowTask", 4096, NULL, 1, NULL);
@@ -68,7 +68,8 @@ void setup()
 
 void loop()
 {
-
+  // Serial.println("message: " + received_message);
+  delay(1000);
   if (received_message.length() > 0)
   {
     Serial.println(received_message);
@@ -82,7 +83,7 @@ void loop()
       // Process the received message
       displayMessage(received_message.c_str()); // Display message on LCD
       Serial.println(received_message);
-      sendData(received_message);
+      // sendData(received_message);
 
       if (received_message == " Lion" || received_message == " Elephant" || received_message == "Lion" || received_message == "Elephant")
       {

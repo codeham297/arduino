@@ -1,6 +1,7 @@
 #include "espnow.h"
+#include "blynk.h"
 
-#define ESPNOW_CHANNEL 6
+int ESPNOW_CHANNEL;
 
 // List of peer MAC addresses
 uint8_t peerMacs[][6] = {
@@ -38,7 +39,7 @@ void onESPNowReceive(const uint8_t *mac_addr, const uint8_t *data, int len)
         String receivedMsg = String((char *)data); // Convert byte array to string
         received_message = receivedMsg;            // Store the received message globally
         // Serial.print("Received message: ");
-        // Serial.println(receivedMsg);
+        Serial.println(receivedMsg);
     }
     else
     {
@@ -47,8 +48,38 @@ void onESPNowReceive(const uint8_t *mac_addr, const uint8_t *data, int len)
 }
 void initWiFiForESPNOW()
 {
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect();
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        Serial.println("Wi-Fi not connected. Attempting connection...");
+        WiFi.mode(WIFI_STA);
+        WiFi.disconnect();                  // ensures no accidental AP join
+        WiFi.begin("ESP32_AP", "00000000"); // Replace with your fallback SSID/pass
+
+        unsigned long startAttempt = millis();
+        while (WiFi.status() != WL_CONNECTED && millis() - startAttempt < 5000)
+        {
+            delay(100);
+        }
+
+        if (WiFi.status() == WL_CONNECTED)
+        {
+            Serial.println("Wi-Fi connected for ESP-NOW channel sync.");
+        }
+        else
+        {
+            Serial.println("Wi-Fi connection failed. Defaulting to channel 6.");
+        }
+    }
+    else
+    {
+        Serial.println("Wi-Fi already connected.");
+    }
+
+    ESPNOW_CHANNEL = WiFi.status() == WL_CONNECTED ? WiFi.channel() : 6;
+
+    Serial.print("ESP-NOW using channel: ");
+    Serial.println(ESPNOW_CHANNEL);
+
     delay(100);
     esp_wifi_set_promiscuous(true);
     esp_wifi_set_channel(ESPNOW_CHANNEL, WIFI_SECOND_CHAN_NONE);
@@ -57,6 +88,7 @@ void initWiFiForESPNOW()
 
 void initESPNow()
 {
+    delay(1000);
     initWiFiForESPNOW();
 
     if (esp_now_init() != ESP_OK)
@@ -64,6 +96,10 @@ void initESPNow()
         Serial.println("ESP-NOW init failed");
         while (true)
             ;
+    }
+    else
+    {
+        Serial.println("ESP NOW INITIALIZED");
     }
 
     esp_now_register_send_cb(onESPNowSent);

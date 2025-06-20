@@ -2,6 +2,8 @@
 
 const char *ssid = "ESP32_AP";
 const char *pass = "00000000";
+String oldmessage = "";
+String message = "";
 
 /* Fill-in information from Blynk Device Info here */
 #define BLYNK_TEMPLATE_ID "TMPL2Trz-zQTJ"
@@ -41,24 +43,15 @@ void myTimerEvent()
 {
     // You can send any value at any time.
     // Please don't send more that 10 values per second.
-    Blynk.virtualWrite(V2, millis() / 1000);
+    if (message != oldmessage)
+    {
+        sendData(message);
+    }
 }
 
 void initBlynk()
 {
-    // Debug console
-    Serial.begin(115200);
-
-    Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
-    // You can also specify server:
-    // Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass, "blynk.cloud", 80);
-    // Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass, IPAddress(192,168,1,100), 8080);
-
-    // Setup a function to be called every second
-    timer.setInterval(1000L, myTimerEvent);
-
-    Blynk.run();
-    timer.run();
+    checkBlynkConnection();
 }
 
 void checkBlynkConnection()
@@ -68,12 +61,12 @@ void checkBlynkConnection()
 
     if (Blynk.connected())
     {
-        digitalWrite(LED_BUILTIN, HIGH);
         if (!connected_message_sent)
         {
-            displayMessage("Blynk is connected.");
+            digitalWrite(LED_BUILTIN, HIGH);
             connected_message_sent = true;
             disconnected_message_sent = false;
+            displayMessage("BLYNK WAS ALREADY CONNECTED");
         }
     }
     else
@@ -81,21 +74,33 @@ void checkBlynkConnection()
         digitalWrite(LED_BUILTIN, LOW);
         if (!disconnected_message_sent)
         {
-            Serial.println("Blynk is not connected");
-            WiFi.begin(ssid, pass);
-            Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+            // Debug console
+            if (!Blynk.connected())
+            {
+                Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+                // You can also specify server:
+                // Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass, "blynk.cloud", 80);
+                // Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass, IPAddress(192,168,1,100), 8080);
 
-            disconnected_message_sent = true;
-            connected_message_sent = false;
+                // Setup a function to be called every second
+                timer.setInterval(1000L, myTimerEvent);
+
+                Blynk.run();
+                timer.run();
+                sendData("BLYNK IS CONNECTED SUCCESSFULLY");
+                displayMessage("BLYNK IS CONNECTED SUCCESSFULLY");
+            }
         }
     }
 }
 void sendData(String message)
 {
-    // Blynk.run();
-    Serial.println("DATA SENT" + message);
-    Blynk.virtualWrite(V0, message);
-    // Blynk.run();
+    if (message != oldmessage && message != "")
+    {
+        Serial.println("DATA SENT: " + message);
+        Blynk.virtualWrite(V0, message);
+        oldmessage = message;
+    }
 }
 
 void BlynkManagerTask(void *pvParameters)

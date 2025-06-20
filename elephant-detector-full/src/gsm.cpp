@@ -35,7 +35,6 @@ void initGSM()
         displayMessage("NETWORK FAILURE");
         playTrack(3);
         checkBlynkConnection();
-        sendData("CONNECTED");
         return;
     }
     SerialMon.println(" success");
@@ -45,7 +44,7 @@ void initGSM()
         SerialMon.println("Network connected");
         displayMessage("CONNECTED");
         sendMessage("CONNECTED");
-        sendData("CONNECTED");
+        // sendData("CONNECTED");
     }
 
     SerialAT.print("AT+CNMI=2,2,0,0,0\r");
@@ -54,7 +53,7 @@ void initGSM()
 
 void sendMessage(const char *message)
 {
-    sendData(message);
+    // sendData(message);
     bool sent = modem.sendSMS(ADMIN_NUMBER, message);
 
     if (sent)

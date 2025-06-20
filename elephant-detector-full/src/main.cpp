@@ -15,12 +15,13 @@
 /* RTOS Task Handle */
 TaskHandle_t vibrationTaskHandle;
 
-String blynk_message = "";
-
-void initESPNowTask(void *pvParameters)
+void initESPNowTask(void *pv)
 {
   initESPNow();
-  vTaskDelete(NULL);
+  for (;;)
+  {
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
 }
 
 void initGSMTask(void *pvParameters)
@@ -51,6 +52,7 @@ void initAlertTask(void *pvParameters)
 
 void setup()
 {
+  pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(115200);
   Serial.println("Initializing system...");
   xTaskCreate(initLCDTask, "LCDTask", 4096, NULL, 1, NULL);
@@ -69,6 +71,10 @@ void setup()
 
 void loop()
 {
+  // Serial.println("message: " + received_message);
+  delay(1000);
+  Serial.println(String("ESPNOW IS ON CHANNEL: ") + WiFi.channel());
+  sendESPNowMessage("THIS MESSAGE IS FROM MAIN");
 
   if (received_message.length() > 0)
   {
@@ -83,7 +89,7 @@ void loop()
       // Process the received message
       displayMessage(received_message.c_str()); // Display message on LCD
       Serial.println(received_message);
-      sendData(received_message);
+      // sendData(received_message);
 
       if (received_message == " Lion" || received_message == " Elephant" || received_message == "Lion" || received_message == "Elephant")
       {

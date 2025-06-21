@@ -141,7 +141,6 @@ void loop()
     Serial.println(String("ESPNOW IS ON CHANNEL: ") + WiFi.channel());
     delay(1000);
     sendESPNowMessage("THIS IS FROM THE CAM");
-    sendESPNowTrigger();
     if (ei_sleep(5) != EI_IMPULSE_OK)
     {
         return;

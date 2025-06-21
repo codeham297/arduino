@@ -1,159 +1,90 @@
 #include "espnow.h"
-#include "blynk.h"
+// #include <WiFi.h>
+// #include "ESPAsyncWebServer.h"
 
 int ESPNOW_CHANNEL;
+constexpr char ESPNOW_SSID[] = "ESPNOW";
+constexpr char ESPNOW_PASS[] = "00000000";
+constexpr char WIFI_SSID[] = "ESP32_AP";
+constexpr char WIFI_PASS[] = "00000000";
 
 // List of peer MAC addresses
-uint8_t peerMacs[][6] = {
-    {0x44, 0x1D, 0x64, 0xF3, 0xF5, 0xF8},
-    {0x44, 0x25, 0xDD, 0x33, 0xAA, 0xC4}};
-const int numPeers = sizeof(peerMacs) / sizeof(peerMacs[0]);
+esp_now_peer_info_t peerInfo;
+#ifdef ESPCAM_H
+uint8_t broadcastAddress[] = {0x44, 0x25, 0xDD, 0x33, 0xAA, 0xC4};
+#else
+uint8_t broadcastAddress[] = {0x44, 0x1D, 0x64, 0xF3, 0xF5, 0xF8};
+#endif
 
 String received_message = ""; // Global variable to store received message
 
 void onESPNowSent(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
-    Serial.print("ESP-NOW send status to ");
-    for (int i = 0; i < 6; i++)
-    {
-        Serial.printf("%02X", mac_addr[i]);
-        if (i < 5)
-            Serial.print(":");
-    }
-    Serial.println(status == ESP_NOW_SEND_SUCCESS ? " => Success" : " => Fail");
+
+    char macStr[18];
+    snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
+             mac_addr[0], mac_addr[1], mac_addr[2],
+             mac_addr[3], mac_addr[4], mac_addr[5]);
+
+    Serial.println(
+        String("ESPNOW SEND TO: ") + macStr +
+        " IS " + (status == ESP_NOW_SEND_SUCCESS ? "SUCCESSFUL" : "FAILED"));
 }
 
 void onESPNowReceive(const uint8_t *mac_addr, const uint8_t *data, int len)
 {
-    // Serial.print("Message received from: ");
-    // for (int i = 0; i < 6; i++)
-    // {
-    //     Serial.printf("%02X", mac_addr[i]);
-    //     if (i < 5)
-    //         Serial.print(":");
-    // }
-    // Serial.println();
-
-    if (data != nullptr && len > 0)
-    {
-        String receivedMsg = String((char *)data); // Convert byte array to string
-        received_message = receivedMsg;            // Store the received message globally
-        // Serial.print("Received message: ");
-        Serial.println(receivedMsg);
-    }
-    else
-    {
-        Serial.println("Received invalid or empty data.");
-    }
+    char macStr[18];
+    snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
+             mac_addr[0], mac_addr[1], mac_addr[2],
+             mac_addr[3], mac_addr[4], mac_addr[5]);
+    Serial.printf("ESPNOW RECEIVED FROM: %s | MESSAGE: %s\n", macStr, (char *)data);
 }
+
 void initWiFiForESPNOW()
 {
     if (WiFi.status() != WL_CONNECTED)
     {
         Serial.println("Wi-Fi not connected. Attempting connection...");
+#ifdef ESPCAM_H
         WiFi.mode(WIFI_STA);
-        WiFi.disconnect();                  // ensures no accidental AP join
-        WiFi.begin("ESP32_AP", "00000000"); // Replace with your fallback SSID/pass
+        WiFi.begin(ESPNOW_SSID, ESPNOW_PASS);
+        ESPNOW_CHANNEL = getWiFiChannel(ESPNOW_SSID);
+        esp_wifi_set_promiscuous(true);
+        esp_wifi_set_channel(ESPNOW_CHANNEL, WIFI_SECOND_CHAN_NONE);
+        esp_wifi_set_promiscuous(false);
+#else
+        WiFi.mode(WIFI_AP_STA);
+        WiFi.softAP(ESPNOW_SSID, ESPNOW_PASS);
+        WiFi.begin(WIFI_SSID, WIFI_PASS);
 
-        unsigned long startAttempt = millis();
-        while (WiFi.status() != WL_CONNECTED && millis() - startAttempt < 5000)
-        {
-            delay(100);
-        }
-
-        if (WiFi.status() == WL_CONNECTED)
-        {
-            Serial.println("Wi-Fi connected for ESP-NOW channel sync.");
-        }
-        else
-        {
-            Serial.println("Wi-Fi connection failed. Defaulting to channel 6.");
-        }
+#endif
     }
-    else
-    {
-        Serial.println("Wi-Fi already connected.");
-    }
-
-    ESPNOW_CHANNEL = WiFi.status() == WL_CONNECTED ? WiFi.channel() : 6;
-
-    Serial.print("ESP-NOW using channel: ");
-    Serial.println(ESPNOW_CHANNEL);
-
-    delay(100);
-    esp_wifi_set_promiscuous(true);
-    esp_wifi_set_channel(ESPNOW_CHANNEL, WIFI_SECOND_CHAN_NONE);
-    esp_wifi_set_promiscuous(false);
 }
 
 void initESPNow()
 {
     delay(1000);
     initWiFiForESPNOW();
-
     if (esp_now_init() != ESP_OK)
     {
-        Serial.println("ESP-NOW init failed");
-        while (true)
-            ;
+        Serial.println("ERROR INITIALIZING ESPNOW");
+        return;
     }
-    else
-    {
-        Serial.println("ESP NOW INITIALIZED");
-    }
-
+#ifdef ESPCAM_H
     esp_now_register_send_cb(onESPNowSent);
-    esp_now_register_recv_cb(onESPNowReceive);
+#else
+    esp_now_register_recv_cb(esp_now_recv_cb_t(onESPNowReceive));
+#endif
 
-    for (int i = 0; i < numPeers; i++)
+    // Register peer
+    memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+    peerInfo.encrypt = false;
+
+    // Add peer
+    if (esp_now_add_peer(&peerInfo) != ESP_OK)
     {
-        esp_now_peer_info_t peerInfo = {};
-        memcpy(peerInfo.peer_addr, peerMacs[i], 6);
-        peerInfo.channel = ESPNOW_CHANNEL;
-        peerInfo.ifidx = WIFI_IF_STA;
-        peerInfo.encrypt = false;
-
-        if (!esp_now_is_peer_exist(peerMacs[i]))
-        {
-            if (esp_now_add_peer(&peerInfo) != ESP_OK)
-            {
-                Serial.print("Failed to register ESP-NOW peer: ");
-                for (int j = 0; j < 6; j++)
-                {
-                    Serial.printf("%02X", peerMacs[i][j]);
-                    if (j < 5)
-                        Serial.print(":");
-                }
-                Serial.println();
-                while (true)
-                    ;
-            }
-        }
-    }
-}
-
-void sendESPNowTrigger()
-{
-    uint8_t message[1] = {1}; // Trigger signal
-
-    for (int i = 0; i < numPeers; i++)
-    {
-        if (esp_now_send(peerMacs[i], message, sizeof(message)) != ESP_OK)
-        {
-            Serial.print("ESP-NOW send failed to: ");
-        }
-        else
-        {
-            Serial.print("ESP-NOW trigger sent to: ");
-        }
-
-        for (int j = 0; j < 6; j++)
-        {
-            Serial.printf("%02X", peerMacs[i][j]);
-            if (j < 5)
-                Serial.print(":");
-        }
-        Serial.println();
+        Serial.println("Failed to add peer");
+        return;
     }
 }
 
@@ -162,19 +93,14 @@ void sendESPNowMessage(String message)
     uint8_t data[message.length() + 1];
     message.getBytes(data, message.length() + 1);
 
-    for (int i = 0; i < numPeers; i++)
-    {
-        esp_err_t result = esp_now_send(peerMacs[i], data, sizeof(data));
+    esp_err_t result = esp_now_send(broadcastAddress, data, sizeof(data));
 
-        Serial.print("Sending message to: ");
-        for (int j = 0; j < 6; j++)
-        {
-            Serial.printf("%02X", peerMacs[i][j]);
-            if (j < 5)
-                Serial.print(":");
-        }
+    char macStr[18];
+    snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
+             broadcastAddress[0], broadcastAddress[1], broadcastAddress[2],
+             broadcastAddress[3], broadcastAddress[4], broadcastAddress[5]);
 
-        Serial.println(result == ESP_OK ? " => Success" : " => Fail");
-        Serial.println("Message: " + message + " Sent");
-    }
+    Serial.println(String("To ") + macStr + " | " +
+                   (result == ESP_OK ? "✅ Sent" : "❌ Failed") +
+                   " | Message: " + message);
 }

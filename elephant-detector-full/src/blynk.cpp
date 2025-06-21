@@ -2,6 +2,9 @@
 
 const char *ssid = "ESP32_AP";
 const char *pass = "00000000";
+constexpr char ESPNOW_SSID[] = "ESPNOW";
+constexpr char ESPNOW_PASS[] = "00000000";
+
 String oldmessage = "";
 String message = "";
 
@@ -80,7 +83,7 @@ void checkBlynkConnection()
         if (!WiFi.isConnected())
         {
             WiFi.mode(WIFI_AP_STA);
-            WiFi.softAP("ESPNOW", "12345678");
+            WiFi.softAP(ESPNOW_SSID, ESPNOW_PASS); // was not in receiver
             WiFi.begin(ssid, pass);
         }
 

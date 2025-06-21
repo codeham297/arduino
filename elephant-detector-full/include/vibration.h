@@ -1,3 +1,6 @@
+#ifndef VIBRATION_H
+#define VIBRATION_H
+
 #include <pins.h>
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
@@ -7,3 +10,4 @@ void initVibrationSensor();
 void classifyVibration(float change);
 void initVibrationTask(void *pvParameters);
 extern float vibration;
+#endif

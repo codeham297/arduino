@@ -1,3 +1,6 @@
+#ifndef PINS_H
+#define PINS_H
+
 #define SDA_PIN 18 // SDA (I2C Data) for Vibration Sensor and LCD
 #define SCL_PIN 5  // SCL (I2C Clock) for Vibration Sensor and LCD
 
@@ -16,3 +19,5 @@
 // Vibration Sensor Pin
 #define LED_BUILTIN 2        // Built-in LED pin for ESP32
 #define LED_BUILTIN_ESPCAM 4 // Built-in LED pin for ESP32-CAM
+
+#endif

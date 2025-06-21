@@ -1,3 +1,5 @@
+#ifndef LCD_H
+#define LCD_H
 
 #include "pins.h" // Centralized pin definitions
 #include <Arduino.h>
@@ -7,3 +9,5 @@
 void initLCD();
 void displayMessage(const char *message);
 void clearLCD();
+
+#endif

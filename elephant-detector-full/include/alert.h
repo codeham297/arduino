@@ -1,5 +1,6 @@
 #ifndef ALERT_H
 #define ALERT_H
+
 #include "gsm.h"
 #include "lcd.h"
 #include "pins.h"

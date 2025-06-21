@@ -77,7 +77,17 @@ void checkBlynkConnection()
             // Debug console
             if (!Blynk.connected())
             {
-                Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+                if (!WiFi.isConnected())
+                {
+                    WiFi.mode(WIFI_AP_STA);
+                    WiFi.softAP("ESP32_AP", "12345678"); // Optional: for local ES
+                    WiFi.begin();
+                }
+
+                // Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+
+                Blynk.config(BLYNK_AUTH_TOKEN);
+                Blynk.connect();
                 // You can also specify server:
                 // Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass, "blynk.cloud", 80);
                 // Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass, IPAddress(192,168,1,100), 8080);

@@ -54,19 +54,18 @@ void initBlynk()
     checkBlynkConnection();
 }
 
+bool connected_message_sent = false;
+bool disconnected_message_sent = false;
 void checkBlynkConnection()
 {
-    static bool connected_message_sent = false;
-    static bool disconnected_message_sent = false;
-
     if (Blynk.connected())
     {
+        digitalWrite(LED_BUILTIN, HIGH);
         if (!connected_message_sent)
         {
-            digitalWrite(LED_BUILTIN, HIGH);
+            displayMessage("BLYNK IS CONNECTED");
             connected_message_sent = true;
             disconnected_message_sent = false;
-            displayMessage("BLYNK WAS ALREADY CONNECTED");
         }
     }
     else
@@ -74,35 +73,34 @@ void checkBlynkConnection()
         digitalWrite(LED_BUILTIN, LOW);
         if (!disconnected_message_sent)
         {
-            // Debug console
-            if (!Blynk.connected())
+            displayMessage("BLYNK DISCONNECTED. ATTEMPTING RECONNECT...");
+            disconnected_message_sent = true;
+            connected_message_sent = false;
+        }
+        if (!WiFi.isConnected())
+        {
+            WiFi.mode(WIFI_AP_STA);
+            WiFi.softAP("ESPNOW", "12345678");
+            WiFi.begin(ssid, pass);
+        }
+
+        Blynk.config(BLYNK_AUTH_TOKEN);
+        Blynk.connect(); // try to connect for 5 seconds max
+
+        if (Blynk.connected())
+        {
+            if (!connected_message_sent)
             {
-                if (!WiFi.isConnected())
-                {
-                    WiFi.mode(WIFI_AP_STA);
-                    WiFi.softAP("ESP32_AP", "12345678"); // Optional: for local ES
-                    WiFi.begin();
-                }
-
-                // Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
-
-                Blynk.config(BLYNK_AUTH_TOKEN);
-                Blynk.connect();
-                // You can also specify server:
-                // Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass, "blynk.cloud", 80);
-                // Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass, IPAddress(192,168,1,100), 8080);
-
-                // Setup a function to be called every second
-                timer.setInterval(1000L, myTimerEvent);
-
-                Blynk.run();
-                timer.run();
+                digitalWrite(LED_BUILTIN, HIGH);
+                displayMessage("BLYNK RECONNECTED");
                 sendData("BLYNK IS CONNECTED SUCCESSFULLY");
-                displayMessage("BLYNK IS CONNECTED SUCCESSFULLY");
+                connected_message_sent = true;
+                disconnected_message_sent = false;
             }
         }
     }
 }
+
 void sendData(String message)
 {
     if (message != oldmessage && message != "")

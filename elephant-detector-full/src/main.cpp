@@ -71,6 +71,7 @@ void setup()
 
 void loop()
 {
+  checkBlynkConnection();
   // Serial.println("message: " + received_message);
   delay(1000);
   Serial.println(String("ESPNOW IS ON CHANNEL: ") + WiFi.channel());

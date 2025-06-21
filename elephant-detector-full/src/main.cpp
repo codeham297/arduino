@@ -11,6 +11,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+int current_environment = 1;
 
 /* RTOS Task Handle */
 TaskHandle_t vibrationTaskHandle;
@@ -74,6 +75,7 @@ void loop()
   checkBlynkConnection();
   // Serial.println("message: " + received_message);
   delay(1000);
+  Serial.println("Current env: " + current_environment);
   Serial.println(String("ESPNOW IS ON CHANNEL: ") + WiFi.channel());
   sendESPNowMessage("THIS MESSAGE IS FROM MAIN");
 

@@ -70,6 +70,7 @@ void initESPNow()
         Serial.println("ERROR INITIALIZING ESPNOW");
         return;
     }
+    Serial.println(current_environment);
 #ifdef ESPCAM_H
     esp_now_register_send_cb(onESPNowSent);
 #else

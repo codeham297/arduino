@@ -12,6 +12,8 @@
 
 #define CAMERA_MODEL_AI_THINKER // Has PSRAM
 
+int current_environment = 2;
+
 #if defined(CAMERA_MODEL_ESP_EYE)
 #define PWDN_GPIO_NUM -
 #define RESET_GPIO_NUM -1
@@ -138,9 +140,11 @@ void loop()
 {
 
     // instead of wait_ms, we'll wait on the signal, this allows threads to cancel us...
+    Serial.println("Current env " + current_environment);
     Serial.println(String("ESPNOW IS ON CHANNEL: ") + WiFi.channel());
     delay(1000);
     sendESPNowMessage("THIS IS FROM THE CAM");
+
     if (ei_sleep(5) != EI_IMPULSE_OK)
     {
         return;

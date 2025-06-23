@@ -1,29 +1,20 @@
 #include <Arduino.h> // Needed for FreeRTOS
+
 #include "i2c_init.h"
-#include "pins.h"
+#include "pins_and_globals.h"
 #include "dfplayer.h"
 #include "lcd.h"
 #include "gsm.h"
 #include "alert.h"
-#include "espnow.h"
 #include "blynk.h"
 #include "vibration.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-int current_environment = 1;
+int environment = 1;
 
 /* RTOS Task Handle */
 TaskHandle_t vibrationTaskHandle;
-
-void initESPNowTask(void *pv)
-{
-  initESPNow();
-  for (;;)
-  {
-    vTaskDelay(pdMS_TO_TICKS(1000));
-  }
-}
 
 void initGSMTask(void *pvParameters)
 {
@@ -55,6 +46,7 @@ void setup()
 {
   pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(115200);
+  Serial.setDebugOutput(true);
   Serial.println("Initializing system...");
   xTaskCreate(initLCDTask, "LCDTask", 4096, NULL, 1, NULL);
   initI2CBuses(); // Initialize I2C buses for LCD and vibration sensor
@@ -67,38 +59,31 @@ void setup()
 
   Serial.println("System setup complete. Ready to operate.");
   playTrack(5);
-  xTaskCreate(initESPNowTask, "ESPNowTask", 4096, NULL, 1, NULL);
+  // xTaskCreate(initESPNowTask, "ESPNowTask", 4096, NULL, 1, NULL);
 }
 
 void loop()
 {
-  checkBlynkConnection();
-  // Serial.println("message: " + received_message);
-  delay(1000);
-  Serial.println("Current env: " + current_environment);
-  Serial.println(String("ESPNOW IS ON CHANNEL: ") + WiFi.channel());
-  sendESPNowMessage("THIS MESSAGE IS FROM MAIN");
+  String new_message = getMessageFromSlave(I2C_DEV_ADDR, 32);
+  new_message.trim();
 
-  if (received_message.length() > 0)
+  // Only update if it's a new, non-empty message
+  if (new_message.length() > 0 && new_message != received_message)
   {
-    Serial.println(received_message);
-    displayMessage(received_message.c_str());
+    received_message = new_message;
   }
 
-  if (vibration > 1)
+  // Process only when both conditions are met
+  if (vibration > 1 && received_message.length() > 0)
   {
-    if (received_message.length() > 0)
-    {
-      // Process the received message
-      displayMessage(received_message.c_str()); // Display message on LCD
-      Serial.println(received_message);
-      // sendData(received_message);
+    displayMessage(received_message.c_str());
+    Serial.println(received_message);
 
-      if (received_message == " Lion" || received_message == " Elephant" || received_message == "Lion" || received_message == "Elephant")
-      {
-        triggerAlert(received_message.c_str()); // Trigger alert for specific messages
-      }
-      received_message = ""; // Clear the message after processing
+    if (received_message == "LION" || received_message == "ELEPHANT")
+    {
+      triggerAlert(received_message.c_str());
     }
+
+    received_message = ""; // Now safe to clear after processing
   }
 }

@@ -3,7 +3,8 @@
 
 #include <Arduino.h>
 #include "lcd.h"
-#include "pins.h"
+#include "pins_and_globals.h"
+#include <HTTPClient.h>
 
 void initBlynk();
 void checkBlynkConnection();

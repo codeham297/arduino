@@ -1,13 +1,11 @@
 #include "blynk.h"
 
-const char *ssid = "ESP32_AP";
+const char *ssid = "297297297";
 const char *pass = "00000000";
 constexpr char ESPNOW_SSID[] = "ESPNOW";
 constexpr char ESPNOW_PASS[] = "00000000";
 
 String oldmessage = "";
-String message = "";
-
 /* Fill-in information from Blynk Device Info here */
 #define BLYNK_TEMPLATE_ID "TMPL2Trz-zQTJ"
 #define BLYNK_TEMPLATE_NAME "elephant detectot"
@@ -21,6 +19,27 @@ String message = "";
 #include <BlynkSimpleEsp32.h>
 
 BlynkTimer timer;
+
+String getTimeFromAPI()
+{
+    HTTPClient http;
+    http.begin("http://worldtimeapi.org/api/timezone/Africa/Dar_es_Salaam");
+    int httpCode = http.GET();
+
+    if (httpCode == 200)
+    {
+        String payload = http.getString();
+        int index = payload.indexOf("\"datetime\":\"") + 12;
+        String timeStr = payload.substring(index, index + 8); // HH:MM:SS
+        http.end();
+        return timeStr;
+    }
+    else
+    {
+        http.end();
+        return "00:00:00";
+    }
+}
 
 // This function is called every time the Virtual Pin 0 state changes
 BLYNK_WRITE(V0)
@@ -96,7 +115,7 @@ void checkBlynkConnection()
             {
                 digitalWrite(LED_BUILTIN, HIGH);
                 displayMessage("BLYNK RECONNECTED");
-                sendData("BLYNK IS CONNECTED SUCCESSFULLY");
+                sendData("SYSTEM ONLINE");
                 connected_message_sent = true;
                 disconnected_message_sent = false;
             }
@@ -108,8 +127,11 @@ void sendData(String message)
 {
     if (message != oldmessage && message != "")
     {
-        Serial.println("DATA SENT: " + message);
-        Blynk.virtualWrite(V0, message);
+        String currentTime = getTimeFromAPI();
+        String payload = message + "\n" + currentTime;
+
+        Serial.println("DATA SENT:\n" + payload);
+        Blynk.virtualWrite(V0, payload);
         oldmessage = message;
     }
 }

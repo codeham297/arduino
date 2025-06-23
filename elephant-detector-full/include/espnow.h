@@ -2,6 +2,7 @@
 #define ESPNOW_H
 
 #include <WiFi.h>
+#include "pins_and_globals.h"
 #include <esp_now.h> // 🔧 Add this
 #include <stdint.h>
 #include <esp_wifi.h>
@@ -11,6 +12,4 @@ void sendESPNowTrigger();
 void onESPNowReceive(const uint8_t *mac_addr, const uint8_t *data, int len);
 void onESPNowSent(const uint8_t *mac_addr, esp_now_send_status_t status);
 void sendESPNowMessage(String message);
-extern String received_message; // Global variable to store received message
-extern int current_environment;
 #endif // ESPNOW_H

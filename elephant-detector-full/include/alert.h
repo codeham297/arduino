@@ -3,7 +3,8 @@
 
 #include "gsm.h"
 #include "lcd.h"
-#include "pins.h"
+#include "pins_and_globals.h"
+#include "dfplayer.h"
 
 // Function prototypes
 void triggerAlert(const char *message); // Send an alert message via GSM

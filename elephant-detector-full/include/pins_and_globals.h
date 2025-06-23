@@ -1,8 +1,13 @@
+#include <Arduino.h>
+
 #ifndef PINS_H
 #define PINS_H
 
 #define SDA_PIN 18 // SDA (I2C Data) for Vibration Sensor and LCD
 #define SCL_PIN 5  // SCL (I2C Clock) for Vibration Sensor and LCD
+
+#define CAM_SDA 15 // The right way is 15 here and 14 below
+#define CAM_SCL 14
 
 // SIM800L Module Pins
 #define SIM800_RST 4
@@ -19,5 +24,13 @@
 // Vibration Sensor Pin
 #define LED_BUILTIN 2        // Built-in LED pin for ESP32
 #define LED_BUILTIN_ESPCAM 4 // Built-in LED pin for ESP32-CAM
+
+extern String message;
+extern String received_message;
+extern int environment;
+// Only DECLARE creds here—defined once in blynk.cpp
+extern const char *ssid;
+extern const char *pass;
+extern int current_environment;
 
 #endif

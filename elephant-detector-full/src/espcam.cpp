@@ -1,8 +1,8 @@
-#include "espnow.h"
+// #include "espnow.h"
 #include "espcam.h"
-#include "pins.h"
 
-#include <elephantdetector_inferencing.h>
+#include <elephant_detector_inferencing.h>
+
 #include "edge-impulse-sdk/dsp/image/image.hpp"
 #include <eloquent_esp32cam.h>
 #include <eloquent_esp32cam/extra/esp32/wifi/sta.h>
@@ -12,7 +12,8 @@
 
 #define CAMERA_MODEL_AI_THINKER // Has PSRAM
 
-int current_environment = 2;
+int environment = 2;
+int counter_test = 0;
 
 #if defined(CAMERA_MODEL_ESP_EYE)
 #define PWDN_GPIO_NUM -
@@ -112,7 +113,9 @@ void setup()
 {
     // put your setup code here, to run once:
     Serial.begin(115200);
-    initESPNow();
+    Serial.setDebugOutput(true);
+    initSlave();
+    // initESPNow();
     Serial.println("ESP32-CAM unit ready and waiting for ESP-NOW alerts.");
     // comment out the below line to start inference immediately after upload
     while (!Serial)
@@ -138,13 +141,6 @@ void setup()
  */
 void loop()
 {
-
-    // instead of wait_ms, we'll wait on the signal, this allows threads to cancel us...
-    Serial.println("Current env " + current_environment);
-    Serial.println(String("ESPNOW IS ON CHANNEL: ") + WiFi.channel());
-    delay(1000);
-    sendESPNowMessage("THIS IS FROM THE CAM");
-
     if (ei_sleep(5) != EI_IMPULSE_OK)
     {
         return;
@@ -193,17 +189,17 @@ void loop()
         {
             continue;
         }
-        //   ei_printf("  %s (%f) [ x: %u, y: %u, width: %u, height: %u ]\r\n",
-        //             bb.label,
-        //             bb.value,
-        //             bb.x,
-        //             bb.y,
-        //             bb.width,
-        //             bb.height);
+        ei_printf("  %s (%f) [ x: %u, y: %u, width: %u, height: %u ]\r\n",
+                  bb.label,
+                  bb.value,
+                  bb.x,
+                  bb.y,
+                  bb.width,
+                  bb.height);
 
-        // Send the bounding box data using ESP-NOW
+        // Send the bounding box data using I2C
         String bbox_message = String(bb.label);
-        sendESPNowMessage(bbox_message);
+        message = bbox_message;
     }
 
     // Print the prediction results (classification)

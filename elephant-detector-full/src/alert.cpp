@@ -1,5 +1,4 @@
 #include "alert.h"
-#include "dfplayer.h"
 
 void initializeAlertSystem()
 {
@@ -13,16 +12,17 @@ void triggerAlert(const char *message)
 
     String alertMsg = "DANGER ";
     alertMsg += message;
-    alertMsg.toUpperCase(); // Convert entire message to uppercase
+    alertMsg.toUpperCase();       // Convert entire message to uppercase
+    String smsMessage = alertMsg; // Copy for SMS/data
     alertMsg += " ALERTING AUTHORITIES";
 
-    displayMessage(alertMsg.c_str()); // Convert back to const char* for LCD
+    displayMessage(alertMsg.c_str()); // For LCD
     playTrack(1);
-    sendMessage(message); // Send original message via SMS
-    activateBuzzer();     // Trigger audible alert
+    sendMessage(smsMessage.c_str()); // Send SMS
+    sendData(smsMessage.c_str());    // Transmit data
+    activateBuzzer();                // Audible alert
     playTrack(4);
 }
-
 void activateBuzzer()
 {
     Serial.println("Buzzer activated!");

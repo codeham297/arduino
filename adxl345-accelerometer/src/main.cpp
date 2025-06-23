@@ -3,7 +3,7 @@
 #include <Adafruit_ADXL345_U.h>
 
 #define SDA_PIN 18 // SDA (I2C Data)
-#define SCL_PIN 5 // SCL (I2C Clock)
+#define SCL_PIN 5  // SCL (I2C Clock)
 
 // Vibration thresholds
 #define LOW_VIBRATION 0.2

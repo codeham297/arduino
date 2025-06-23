@@ -1,7 +1,7 @@
 #ifndef DFPLAYER_H
 #define DFPLAYER_H
 
-#include "pins.h"
+#include "pins_and_globals.h"
 #include "lcd.h"
 #include "gsm.h"
 #include <DFRobotDFPlayerMini.h>

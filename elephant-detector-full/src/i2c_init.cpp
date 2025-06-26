@@ -34,6 +34,7 @@ void onRequest()
     {
         Wire.write(sendStr[i]);
     }
+    message = ""; // Clear the message after sending
 }
 
 void onReceive(int len)

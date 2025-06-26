@@ -14,18 +14,7 @@ void setup()
   pinMode(BLUE_LED, OUTPUT);
   pinMode(YELLOW_LED, OUTPUT);
   pinMode(WHITE_LED, OUTPUT);
-
-  xTaskCreate(BlynkManagerTask, "BlynkManagerTask", 20048, NULL, 1, NULL);
-
-  // Initialize RFID reader
-  // initRFIDReader();
-
-  // Initialize Blynk
-  // initBlynk();
-
-  // // Start tasks
-  // xTaskCreate(waterFlowTask, "WaterFlowTask", 2048, NULL, 1, &waterFlowTaskHandle);
-  // xTaskCreate(rfidScanner, "RFIDScanner", 2048, NULL, 1, &rfidScannerTaskHandle);
+  xTaskCreate(BlynkManagerTask, "BlynkTask", 4096, NULL, 1, NULL);
 }
 void loop()
 {

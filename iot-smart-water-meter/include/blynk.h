@@ -7,7 +7,8 @@
 
 void initBlynk();
 void checkBlynkConnection();
-void sendData(String message);
+void sendData(String data);
 void BlynkManagerTask(void *pvParameters);
+void sendMeterData(String user_name, float current_usage, float total_usage, float Balance);
 
 #endif

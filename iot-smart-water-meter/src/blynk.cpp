@@ -1,17 +1,20 @@
 #include "blynk.h"
 
-const char *ssid = "ESP32_AP";
-const char *pass = "00000000";
-constexpr char ESPNOW_SSID[] = "ESPNOW";
-constexpr char ESPNOW_PASS[] = "00000000";
-
 String oldmessage = "";
 String message = "SYSTEM ONLINE"; // Initial message to send
+#include <Arduino.h>
+/* Fill in information from Blynk Device Info */
+// #define BLYNK_TEMPLATE_ID "TMPL2fA5FeDds"
+// #define BLYNK_TEMPLATE_NAME "METER"
+// #define BLYNK_AUTH_TOKEN "-TSP4WITnmcJv5D1xOlsfmGiNeFmN9wX"
 
 /* Fill-in information from Blynk Device Info here */
 #define BLYNK_TEMPLATE_ID "TMPL2ARmqqC39"
 #define BLYNK_TEMPLATE_NAME "SMART WATER METER"
 #define BLYNK_AUTH_TOKEN "yGrqJCuDshNBK5Bfr1LE3TIzXJlM7F79"
+
+char ssid[] = "ESP32_AP";
+char pass[] = "00000000";
 
 /* Comment this out to disable prints and save space */
 #define BLYNK_PRINT Serial
@@ -42,15 +45,15 @@ BLYNK_CONNECTED()
 }
 
 // This function sends Arduino's uptime every second to Virtual Pin 2.
-void myTimerEvent()
-{
-    // You can send any value at any time.
-    // Please don't send more that 10 values per second.
-    if (message != oldmessage)
-    {
-        sendData(message);
-    }
-}
+// void myTimerEvent()
+// {
+//     // You can send any value at any time.
+//     // Please don't send more that 10 values per second.
+//     if (message != oldmessage)
+//     {
+//         // sendData(message);
+//     }
+// }
 
 void initBlynk()
 {
@@ -82,8 +85,8 @@ void checkBlynkConnection()
         }
         if (!WiFi.isConnected())
         {
-            WiFi.mode(WIFI_AP_STA);
-            WiFi.softAP(ESPNOW_SSID, ESPNOW_PASS); // was not in receiver
+            WiFi.mode(WIFI_STA);
+            WiFi.disconnect(); // Ensure we are disconnected before reconnecting
             WiFi.begin(ssid, pass);
         }
 
@@ -104,16 +107,42 @@ void checkBlynkConnection()
     }
 }
 
-void sendData(String message)
-{
-    if (message != oldmessage && message != "")
-    {
-        String currentTime = "00:00:00";
-        // String payload = message + "\n" + currentTime;
+String old_user_name = "";
+float old_current_usage = 0.0;
+float old_total_usage = 0.0;
+float old_balance = 0.0;
 
-        Serial.println("DATA SENT:\n" + message);
-        Blynk.virtualWrite(V0, message);
-        oldmessage = message;
+void sendMeterData(String user_name, float current_usage, float total_usage, float Balance)
+{
+    if (user_name != old_user_name)
+    {
+        Blynk.virtualWrite(V1, user_name);
+        old_user_name = user_name;
+    }
+    else if (current_usage != old_current_usage)
+    {
+        Blynk.virtualWrite(V2, current_usage);
+        old_current_usage = current_usage;
+    }
+    else if (total_usage != old_total_usage)
+    {
+        Blynk.virtualWrite(V3, total_usage);
+        old_total_usage = total_usage;
+    }
+    else if (Balance != old_balance)
+    {
+        Blynk.virtualWrite(V4, Balance);
+        old_balance = Balance;
+    }
+}
+
+String old_message = "";
+void sendData(String data)
+{
+    if (data != old_message)
+    {
+        Blynk.virtualWrite(V0, data);
+        old_message = data;
     }
 }
 

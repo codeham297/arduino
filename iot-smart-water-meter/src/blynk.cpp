@@ -3,18 +3,20 @@
 String oldmessage = "";
 String message = "SYSTEM ONLINE"; // Initial message to send
 #include <Arduino.h>
-/* Fill in information from Blynk Device Info */
-// #define BLYNK_TEMPLATE_ID "TMPL2fA5FeDds"
-// #define BLYNK_TEMPLATE_NAME "METER"
-// #define BLYNK_AUTH_TOKEN "-TSP4WITnmcJv5D1xOlsfmGiNeFmN9wX"
 
 /* Fill-in information from Blynk Device Info here */
+// pwanielectrical@gmail.com
 #define BLYNK_TEMPLATE_ID "TMPL2ARmqqC39"
 #define BLYNK_TEMPLATE_NAME "SMART WATER METER"
 #define BLYNK_AUTH_TOKEN "yGrqJCuDshNBK5Bfr1LE3TIzXJlM7F79"
 
+// // hamisisalum297@gmail.com
+// #define BLYNK_TEMPLATE_ID "TMPL2fA5FeDds"
+// #define BLYNK_TEMPLATE_NAME "METER"
+// #define BLYNK_AUTH_TOKEN "-TSP4WITnmcJv5D1xOlsfmGiNeFmN9wX"
+
 char ssid[] = "ESP32_AP";
-char pass[] = "00000000";
+char pass[] = "541754175417";
 
 /* Comment this out to disable prints and save space */
 #define BLYNK_PRINT Serial

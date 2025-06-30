@@ -167,6 +167,15 @@ void rfidScanner(void *pvParameters)
   }
 }
 
+void resetRFID()
+{
+  Serial.println("[RFID] Resetting reader...");
+  mfrc522.PCD_Reset(); // issue soft reset
+  delay(50);           // give it a moment
+  mfrc522.PCD_Init();  // re-init SPI, antenna, config
+  Serial.println("[RFID] Reader re-initialized");
+}
+
 void waterFlowTask(void *pvParameters)
 {
   float deltaWater = 0.0; // Water usage in liters for the current cycle
@@ -265,11 +274,3 @@ void loop()
   // Not needed, as tasks handle execution.
 }
 
-void resetRFID()
-{
-  Serial.println("[RFID] Resetting reader...");
-  mfrc522.PCD_Reset(); // issue soft reset
-  delay(50);           // give it a moment
-  mfrc522.PCD_Init();  // re-init SPI, antenna, config
-  Serial.println("[RFID] Reader re-initialized");
-}

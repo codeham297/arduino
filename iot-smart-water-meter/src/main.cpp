@@ -274,6 +274,5 @@ void setup()
 
 void loop()
 {
-
   // Not needed, as tasks handle execution.
 }

@@ -1,29 +1,34 @@
 #include "ota.h"
-#define RED_LED 2 // GPIO pin for RED LED
+
+#define RED_LED 2
+
+// WiFi credentials (now defined in main.cpp)
+const char *ssid = "ESP32_AP";
+const char *pass = "541754175417";
 
 void blinkingLEDTask(void *pvParameters);
 
 void setup()
 {
-  initOTA(); // Initialize OTA server
+  Serial.begin(115200);
   xTaskCreate(blinkingLEDTask, "Blinking LED Task", 1024, NULL, 1, NULL);
+  xTaskCreate(initOTATask, "OTATask", 4096, NULL, 1, NULL);            // Start OTA task
+  xTaskCreate(startOTAserver, "OTA Server Task", 4096, NULL, 1, NULL); // Start OTA server task
 }
 
 void loop()
 {
-  startOTAserver(); // Handle OTA updates
+  // The main loop is intentionally left empty as tasks handle execution.
+  // This allows the FreeRTOS scheduler to manage task switching.
 }
-
 void blinkingLEDTask(void *pvParameters)
 {
   pinMode(RED_LED, OUTPUT);
   while (true)
   {
-    Serial.println("RED LED ON");
     digitalWrite(RED_LED, HIGH);
-    vTaskDelay(1000 / portTICK_PERIOD_MS); // Keep RED LED ON for 1 second
-    Serial.println("RED LED OFF");
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
     digitalWrite(RED_LED, LOW);
-    vTaskDelay(1000 / portTICK_PERIOD_MS); // Keep RED LED OFF for 1 second
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }

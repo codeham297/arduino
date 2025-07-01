@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "globals.h"
 #include "blynk.h"
+#include "ota.h"
 
 String oldusername = "";
 float oldwaterused = 0.0;
@@ -267,10 +268,12 @@ void setup()
   xTaskCreate(rfidScanner, "RFIDScannerTask", 4096, NULL, 2, &rfidScannerTaskHandle);
   xTaskCreate(waterFlowTask, "WaterFlowMonitor", 4096, NULL, 2, &waterFlowTaskHandle);
   xTaskCreate(BlynkManagerTask, "BlynkTask", 4096, NULL, 3, NULL);
+  xTaskCreate(initOTATask, "OTATask", 4096, NULL, 1, NULL);          // Initialize OTA task then delete it
+  xTaskCreate(startOTAserver, "OTAServerTask", 4096, NULL, 1, NULL); // Start OTA server task
 }
 
 void loop()
 {
+
   // Not needed, as tasks handle execution.
 }
-

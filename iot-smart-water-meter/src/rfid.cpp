@@ -1,7 +1,10 @@
 #include "rfid.h"
+#include "waterflow.h"
+#include "blynk.h"
 #include <SPI.h>
 #include <MFRC522.h>
 
+float deltaWater = 0.0; // Delta water usage in liters
 // RFID reader instance
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
@@ -76,6 +79,8 @@ void rfidRun()
         {
             Serial.println("User: " + user.userName + ", UID: " + user.cardUID +
                            ", Water Usage: " + String(user.waterUsage) + "L, Balance: " + String(user.balance) + "L");
+            sendMeterData(user.userName, deltaWater, user.waterUsage, user.balance);
+
             digitalWrite(GREEN_LED, HIGH);
             if (user.balance > 0.0)
             {

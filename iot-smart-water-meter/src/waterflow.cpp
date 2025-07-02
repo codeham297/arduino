@@ -1,4 +1,5 @@
 #include "waterflow.h"
+#include "blynk.h"
 #include "globals.h"
 
 void waterFlowTask(void *pvParameters)
@@ -27,6 +28,8 @@ void waterFlowTask(void *pvParameters)
                     {
                         users[i].balance -= deltaWater;
                         users[i].waterUsage += deltaWater;
+                        sendMeterData(users[i].userName, deltaWater, users[i].waterUsage, users[i].balance);
+
                         if (users[i].balance <= 0)
                         {
                             Serial.println("Balance depleted for " + users[i].userName);

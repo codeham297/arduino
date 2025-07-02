@@ -15,13 +15,6 @@ void IRAM_ATTR countPulse()
   pulseCount++;
 }
 
-// // Function declarations
-// void waterFlowTask(void *pvParameters);
-// void rfidScanner(void *pvParameters);
-// UserData getUserData(String scannedUID); // Returns user data for a recognized card
-// void IRAM_ATTR countPulse();
-// void resetRFID(); // Resets the RFID reader
-
 void setup()
 {
   Serial.begin(115200);

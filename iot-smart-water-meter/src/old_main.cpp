@@ -10,7 +10,7 @@
 #define BLYNK_AUTH_TOKEN "yGrqJCuDshNBK5Bfr1LE3TIzXJlM7F79"
 
 char ssid[] = "ESP32_AP";
-char pass[] = "00000000";
+char pass[] = "541754175417";
 
 String oldusername = "";
 float oldwaterused = 0.0;

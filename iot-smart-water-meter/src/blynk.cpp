@@ -36,14 +36,19 @@ BLYNK_CONNECTED()
     Blynk.setProperty(V3, "offImageUrl", "https://static-image.nyc3.cdn.digitaloceanspaces.com/general/fte/congratulations.png");
     Blynk.setProperty(V3, "onImageUrl", "https://static-image.nyc3.cdn.digitaloceanspaces.com/general/fte/congratulations_pressed.png");
     Blynk.setProperty(V3, "url", "https://docs.blynk.io/en/getting-started/what-do-i-need-to-blynk/how-quickstart-device-was-made");
+    digitalWrite(BLUE_LED, HIGH); // Turn on blue LED when Blynk connects
 }
 
 void initBlynk()
 {
+    pinMode(BLUE_LED, OUTPUT);   // Initialize BLUE_LED as output
+    digitalWrite(BLUE_LED, LOW); // Start with LED off
+
     Blynk.config(BLYNK_AUTH_TOKEN);
     if (!Blynk.connect())
     {
         Serial.println("[Blynk] Initial connection failed");
+        digitalWrite(BLUE_LED, LOW); // Ensure LED is off if connection fails
     }
 }
 
@@ -88,8 +93,21 @@ void BlynkManagerTask(void *pvParameters)
     {
         if (isWiFiConnected())
         {
-            Blynk.run();
-            timer.run();
+            if (Blynk.connected())
+            {
+                Blynk.run();
+                timer.run();
+                digitalWrite(BLUE_LED, HIGH); // LED on when connected
+            }
+            else
+            {
+                digitalWrite(BLUE_LED, LOW); // LED off when disconnected
+                Blynk.connect();             // Try to reconnect
+            }
+        }
+        else
+        {
+            digitalWrite(BLUE_LED, LOW); // LED off when WiFi is disconnected
         }
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }

@@ -197,6 +197,7 @@ void rfidRun()
             digitalWrite(SOLENOID_VALVE, LOW);
             vTaskDelay(1000 / portTICK_PERIOD_MS);
             digitalWrite(RED_LED, LOW);
+            sendMeterData("Unknown", 0.0, 0.0, 0.0); // Send data for unknown card
         }
         current_user_uid = user.cardUID;
         cardPresent = true;

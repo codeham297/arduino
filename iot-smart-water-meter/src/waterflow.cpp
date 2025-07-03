@@ -30,7 +30,7 @@ void waterFlowTask(void *pvParameters)
                         users[i].waterUsage += deltaWater;
                         sendMeterData(users[i].userName, deltaWater, users[i].waterUsage, users[i].balance);
 
-                        if (users[i].balance <= 0)
+                        if (users[i].balance <= 0.132)
                         {
                             Serial.println("Balance depleted for " + users[i].userName);
                             digitalWrite(SOLENOID_VALVE, LOW);

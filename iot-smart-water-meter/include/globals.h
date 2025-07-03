@@ -34,7 +34,7 @@
 #define BLUE_LED 25          // Blynk connected
 #define YELLOW_LED 32        // Indicator for solenoid open / water flow
 #define WHITE_LED 27         // Leaking water detected
-#define PULSES_PER_LITER 459 // Adjust based on sensor specs
+#define PULSES_PER_LITER 340 // Adjust based on sensor specs
 
 // Shared variables
 extern volatile unsigned long pulseCount;

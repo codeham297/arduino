@@ -146,6 +146,8 @@ void rfidRun()
                 digitalWrite(YELLOW_LED, LOW);
                 cardPresent = false;
                 cardAbsenceCounter = 0;
+                sendMeterData("NO USER", 0.0, 0.0, 0.0); // Send data for unknown card
+                sendUserDatabase();                      // Update user database
                 resetRFID();
             }
         }

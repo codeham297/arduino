@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "lcd.h"
+#include "my_time.h"
 #include "pins_and_globals.h"
 #include <HTTPClient.h>
 

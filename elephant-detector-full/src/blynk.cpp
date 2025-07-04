@@ -20,27 +20,6 @@ String oldmessage = "";
 
 BlynkTimer timer;
 
-String getTimeFromAPI()
-{
-    HTTPClient http;
-    http.begin("http://worldtimeapi.org/api/timezone/Africa/Dar_es_Salaam");
-    int httpCode = http.GET();
-
-    if (httpCode == 200)
-    {
-        String payload = http.getString();
-        int index = payload.indexOf("\"datetime\":\"") + 12;
-        String timeStr = payload.substring(index, index + 8); // HH:MM:SS
-        http.end();
-        return timeStr;
-    }
-    else
-    {
-        http.end();
-        return "00:00:00";
-    }
-}
-
 // This function is called every time the Virtual Pin 0 state changes
 BLYNK_WRITE(V0)
 {
@@ -127,7 +106,7 @@ void sendData(String message)
 {
     if (message != oldmessage && message != "")
     {
-        String currentTime = getTimeFromAPI();
+        String currentTime = getTimeInfo(); // Assuming getTimeInfo() returns a String with the current time
         String payload = message + "\n" + currentTime;
 
         Serial.println("DATA SENT:\n" + payload);

@@ -40,27 +40,6 @@ BLYNK_CONNECTED()
     digitalWrite(BLUE_LED, HIGH); // Turn on blue LED when Blynk connects
 }
 
-// String usersArrayToString()
-// {
-//     String result = "[";
-//     for (int i = 0; i < 10; i++)
-//     {
-
-//         result += "\"name\":\"" + users[i].userName + "\",";
-//         result += "\"uid\":\"" + users[i].cardUID + "\",";
-//         result += "\"usage\":" + String(users[i].waterUsage) + ",";
-//         result += "\"balance\":" + String(users[i].balance);
-//         result += "}\n";
-
-//         if (i < 9)
-//         {
-//             result += ",";
-//         }
-//     }
-//     result += "]";
-//     return result;
-// }
-
 String usersArrayToString()
 {
     String result = "USER DATABASE:\n";
